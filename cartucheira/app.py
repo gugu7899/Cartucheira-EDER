@@ -44,17 +44,18 @@ class MainWindow(QMainWindow):
         self.volume=QSlider(Qt.Orientation.Horizontal); self.volume.setRange(0,100); self.volume.setValue(self.config.data.get("volume",80)); self.volume.setFixedWidth(145); self.volume.valueChanged.connect(self.set_volume); line.addWidget(self.volume); self.volume_text=QLabel(); line.addWidget(self.volume_text); volume_box.addLayout(line); row.addLayout(volume_box)
         row.addStretch(); logo=QLabel(); logo.setObjectName("logo"); logo.setAlignment(Qt.AlignmentFlag.AlignCenter); logo.setFixedSize(245,112)
         pix=QPixmap(str(resource("assets/logo.png"))); logo.setPixmap(pix.scaled(225,105,Qt.AspectRatioMode.KeepAspectRatio,Qt.TransformationMode.SmoothTransformation)); row.addWidget(logo); row.addStretch()
-        for text,handler in [("↓  IMPORTAR",self.import_backup),("↑  EXPORTAR",self.export_backup)]:
+        for text,handler in [("↓  IMPORTAR",self.import_backup),("↑  EXPORTAR",self.export_backup),("▣  BACKUP",self.export_backup)]:
             button=QPushButton(text); button.clicked.connect(handler); row.addWidget(button)
         self.pause=QPushButton("Ⅱ  PAUSAR"); self.pause.clicked.connect(self.pause_audio); row.addWidget(self.pause)
-        stop=QPushButton("■  PARAR"); stop.setObjectName("stop"); stop.clicked.connect(self.stop); row.addWidget(stop); main.addWidget(controls)
+        stop=QPushButton("■  PARAR"); stop.setObjectName("stop"); stop.clicked.connect(self.stop); row.addWidget(stop)
+        settings=QPushButton("⚙"); settings.setFixedWidth(45); settings.clicked.connect(lambda:self.settings_menu(settings)); row.addWidget(settings); main.addWidget(controls)
         grid=QGridLayout(); grid.setSpacing(8); self.carts=[]
         for i in range(36):
             cart=Cart(i); cart.triggered.connect(self.play); cart.menu_requested.connect(self.cart_menu); grid.addWidget(cart,i//6,i%6); self.carts.append(cart)
         main.addLayout(grid,1)
         player=self.panel("player"); row=QHBoxLayout(player); row.setContentsMargins(16,7,16,7); row.addWidget(QLabel("▶"))
         self.time_label=QLabel("00:00 / 00:00"); row.addWidget(self.time_label); self.progress=QProgressBar(); self.progress.setRange(0,1000); row.addWidget(self.progress,1); main.addWidget(player)
-        footer=self.panel("footer"); row=QHBoxLayout(footer); row.setContentsMargins(10,3,10,3); row.addWidget(QLabel("Cartucheira EDER v0.1")); row.addStretch(); row.addWidget(QLabel("Todos os direitos reservados")); row.addStretch(); owner=QLabel("SO M.Soares"); owner.setStyleSheet("font-size:8pt;font-weight:700"); row.addWidget(owner); main.addWidget(footer)
+        footer=self.panel("footer"); row=QHBoxLayout(footer); row.setContentsMargins(10,5,10,5); row.addStretch(); owner=QLabel("Marcelo Soares"); owner.setStyleSheet("font-size:12pt;font-weight:800;color:#f2f2f2"); row.addWidget(owner); row.addStretch(); main.addWidget(footer)
         self.set_volume(self.volume.value())
     def refresh(self):
         for i,cart in enumerate(self.carts):
@@ -95,6 +96,13 @@ class MainWindow(QMainWindow):
     def change_color(self,index):
         current=QColor(self.config.data["carts"][index].get("color","#ff8a00")); chosen=QColorDialog.getColor(current,self,"Cor do cartucho")
         if chosen.isValid(): self.config.data["carts"][index]["color"]=chosen.name(); self.config.write(); self.carts[index].set_color(chosen.name())
+    def settings_menu(self,button):
+        menu=QMenu(self); restore=QAction("Restaurar cartuchos originais",self); about=QAction("Sobre a Cartucheira EDER",self)
+        restore.triggered.connect(self.restore_defaults); about.triggered.connect(lambda:QMessageBox.about(self,"Cartucheira EDER","Cartucheira EDER v0.1\nSistema profissional de áudio para rádio e estúdio."))
+        menu.addAction(restore); menu.addSeparator(); menu.addAction(about); menu.exec(button.mapToGlobal(button.rect().bottomLeft()))
+    def restore_defaults(self):
+        if QMessageBox.question(self,"Restaurar cartuchos","Restaurar nomes, cores e efeitos originais dos 36 cartuchos?")==QMessageBox.StandardButton.Yes:
+            self.stop(); self.config.data=Config.defaults(); self.config.write(); self.volume.setValue(80); self.theme.setCurrentText("Escuro Padrão"); self.refresh()
     def clear(self,index):
         if QMessageBox.question(self,"Limpar cartucho","Remover nome e áudio deste cartucho?")==QMessageBox.StandardButton.Yes:
             if self.current==index:self.stop()
