@@ -27,12 +27,15 @@ class Config:
         self.data = self.load()
     @staticmethod
     def defaults():
-        return {"version":1,"volume":80,"carts":[{"name":n,"audio":f"preset:{i+1:02}.wav"} for i,n in enumerate(NAMES)]}
+        return {"version":1,"volume":80,"theme":"Escuro Padrão","carts":[{"name":n,"audio":f"preset:{i+1:02}.wav","color":"#ff8a00"} for i,n in enumerate(NAMES)]}
     def load(self):
         if self.path.exists():
             try:
                 data=json.loads(self.path.read_text(encoding="utf-8"))
-                if len(data.get("carts",[]))==36: return data
+                if len(data.get("carts",[]))==36:
+                    data.setdefault("theme","Escuro Padrão")
+                    for cart in data["carts"]: cart.setdefault("color","#ff8a00")
+                    return data
             except Exception: pass
             shutil.copy2(self.path,self.path.with_suffix(".json.corrompido"))
         data=self.defaults(); self.write(data); return data
@@ -52,7 +55,8 @@ class Config:
         self._unused(old); self.write()
     def clear(self,index):
         old=self.data["carts"][index].get("audio","")
-        self.data["carts"][index]={"name":"","audio":""}; self._unused(old); self.write()
+        color=self.data["carts"][index].get("color","#ff8a00")
+        self.data["carts"][index]={"name":"","audio":"","color":color}; self._unused(old); self.write()
     def _unused(self,value):
         if value and not value.startswith("preset:") and not any(c.get("audio")==value for c in self.data["carts"]):
             (self.audio_dir/Path(value).name).unlink(missing_ok=True)
