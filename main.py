@@ -5,12 +5,12 @@ from cartucheira.app import MainWindow
 
 def main():
     app = QApplication(sys.argv)
-    app.setApplicationName("Cartucheira EDER")
+    app.setApplicationName("Cartucheira MBS")
     app.setOrganizationName("SO M.Soares")
     try:
         window = MainWindow()
     except Exception as exc:
-        QMessageBox.critical(None, "Cartucheira EDER", f"Não foi possível iniciar.\n\n{exc}")
+        QMessageBox.critical(None, "Cartucheira MBS", f"Não foi possível iniciar.\n\n{exc}")
         return 1
     window.show()
     return app.exec()
