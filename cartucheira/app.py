@@ -7,23 +7,23 @@ from .config import Config,resource
 from .widgets import Cart
 
 THEMES={
- "Escuro Padrão":("#0d0e10","#15171a","#17191b","#f3f3f3","#ff8a00"),
- "Preto Estúdio":("#050505","#0a0a0a","#111111","#ffffff","#ff7900"),
- "Cinza Console":("#202226","#292c31","#32353a","#f5f5f5","#ff9b22"),
- "Azul Estúdio":("#071525","#0b2139","#102b49","#edf6ff","#268cff")}
+ "Escuro Padrão":("#0d0e10","#15171a","#17191b","#1d2024","#f3f3f3","#ff8a00"),
+ "Preto Estúdio":("#050505","#0a0a0a","#101010","#171717","#ffffff","#ff7900"),
+ "Cinza Console":("#202226","#292c31","#303338","#383b40","#f5f5f5","#ff9b22"),
+ "Azul Estúdio":("#071525","#0b2139","#102b49","#153657","#edf6ff","#268cff")}
 BASE_STYLE='''
-QWidget{background:@BG;color:@FG;font-family:"Segoe UI";font-size:10pt} QMainWindow{background:@BG}
-#titleBar,#controlBar,#player,#footer{background:@PANEL;border:1px solid #303238;border-radius:7px}
+QWidget{background:@BG;color:@FG;font-family:"Segoe UI";font-size:10pt} QLabel{background:transparent} QMainWindow{background:@BG}
+#titleBar,#footer{background:@PANEL;border:1px solid #303238;border-radius:7px} #controlBar{background:@BG;border:0}
 #brand{font-size:17pt;font-weight:800} #logo{background:transparent;border-left:1px solid #303238;border-right:1px solid #303238}
 QPushButton{background:#1d1f22;border:1px solid #484b50;border-radius:6px;padding:7px 12px;font-weight:700}
 QPushButton:hover{border-color:@ACCENT;background:#25272b} QPushButton:pressed{background:@ACCENT;color:#111}
-#stop{min-width:92px} #cart{background:@CART;border:1px solid #55585d;border-radius:8px} #cart:hover{background:#202225;border-color:#8b8b8b}
+#stop{min-width:92px} #cart{background:@CART;border:1px solid #55585d;border-radius:8px} #cart[alternate="true"]{background:@CARTALT} #cart:hover{border-color:#8b8b8b}
 #cart[playing="true"]{border:2px solid @ACCENT;background:@PANEL} #number{color:#bfc0c2;font-size:10pt;font-weight:700}
-#dots{background:transparent;border:0;padding:0;font-size:16pt} #led{color:#444;font-size:9pt}
+#dots{background:transparent;border:0;padding:0;font-size:16pt}
 #trigger{background:transparent;border:0;font-size:11pt;font-weight:700;padding:0} #trigger:hover,#trigger:pressed{background:transparent;color:#ff9d2e}
-#cartTime{background:transparent;color:#c7c7c7;font-size:8pt;font-weight:600}
-QSlider::groove:horizontal{height:5px;background:#444;border-radius:2px} QSlider::handle:horizontal{width:15px;margin:-5px 0;background:@ACCENT;border-radius:7px}
-QComboBox{background:#1d1f22;border:1px solid #484b50;border-radius:6px;padding:7px 28px 7px 10px;min-width:140px}
+#cartTime{background:transparent;color:#c7c7c7;font-size:8pt;font-weight:600} #audioProgress{background:transparent;border:0} #audioProgress::chunk{background:#ff8a00;border-radius:1px}
+QSlider{background:transparent} QSlider::groove:horizontal{height:4px;background:#30343a;border-radius:2px} QSlider::handle:horizontal{width:15px;margin:-5px 0;background:@ACCENT;border-radius:7px}
+QComboBox{background:transparent;border:1px solid #484b50;border-radius:6px;padding:7px 28px 7px 10px;min-width:140px}
 QMenu{background:#202225;border:1px solid #555;padding:5px} QMenu::item{padding:7px 30px 7px 10px} QMenu::item:selected{background:@ACCENT;color:#111}
 '''
 
@@ -39,9 +39,9 @@ class MainWindow(QMainWindow):
         title=self.panel("titleBar"); row=QHBoxLayout(title); row.setContentsMargins(18,5,18,5)
         brand=QLabel('◉  CARTUCHEIRA <span style="color:#ff8a00">EDER</span>'); brand.setObjectName("brand"); row.addWidget(brand); row.addStretch(); main.addWidget(title)
         controls=self.panel("controlBar"); row=QHBoxLayout(controls); row.setContentsMargins(14,7,14,7)
-        theme_box=QVBoxLayout(); self.theme_heading=QLabel("TEMA"); self.theme_heading.setStyleSheet("font-weight:800"); theme_box.addWidget(self.theme_heading)
+        theme_box=QVBoxLayout(); self.theme_heading=QLabel("TEMA"); self.theme_heading.setAlignment(Qt.AlignmentFlag.AlignCenter); self.theme_heading.setStyleSheet("font-weight:800"); theme_box.addWidget(self.theme_heading)
         self.theme=QComboBox(); self.theme.addItems(THEMES); self.theme.setCurrentText(self.config.data.get("theme","Escuro Padrão")); self.theme.currentTextChanged.connect(self.set_theme); theme_box.addWidget(self.theme); row.addLayout(theme_box)
-        volume_box=QVBoxLayout(); volume_box.addWidget(QLabel("VOLUME GERAL")); line=QHBoxLayout(); line.addWidget(QLabel("🔊"))
+        volume_box=QVBoxLayout(); volume_heading=QLabel("VOLUME GERAL"); volume_heading.setAlignment(Qt.AlignmentFlag.AlignCenter); volume_box.addWidget(volume_heading); line=QHBoxLayout(); line.addWidget(QLabel("🔊"))
         self.volume=QSlider(Qt.Orientation.Horizontal); self.volume.setRange(0,100); self.volume.setValue(self.config.data.get("volume",80)); self.volume.setFixedWidth(145); self.volume.valueChanged.connect(self.set_volume); line.addWidget(self.volume); self.volume_text=QLabel(); line.addWidget(self.volume_text); volume_box.addLayout(line); row.addLayout(volume_box)
         row.addStretch(); logo=QLabel(); logo.setObjectName("logo"); logo.setAlignment(Qt.AlignmentFlag.AlignCenter); logo.setFixedSize(245,112)
         image=QImage(str(resource("assets/logo.png")))
@@ -57,7 +57,7 @@ class MainWindow(QMainWindow):
         for i in range(36):
             cart=Cart(i); cart.triggered.connect(self.play); cart.menu_requested.connect(self.cart_menu); grid.addWidget(cart,i//6,i%6); self.carts.append(cart)
         main.addLayout(grid,1)
-        footer=self.panel("footer"); row=QHBoxLayout(footer); row.setContentsMargins(10,5,10,5); row.addStretch(); owner=QLabel("Marcelo Soares"); owner.setStyleSheet("font-size:12pt;font-weight:800;color:#f2f2f2"); row.addWidget(owner); row.addStretch(); main.addWidget(footer)
+        footer=self.panel("footer"); row=QHBoxLayout(footer); row.setContentsMargins(12,5,10,5); owner=QLabel("Programador: Marcelo Soares"); owner.setStyleSheet("font-size:11pt;font-weight:400;color:#f2f2f2"); row.addWidget(owner); row.addStretch(); main.addWidget(footer)
         self.set_volume(self.volume.value())
     def refresh(self):
         for i,cart in enumerate(self.carts):
@@ -75,7 +75,7 @@ class MainWindow(QMainWindow):
         self.current=None; self.elapsed=0
     def set_volume(self,value): self.audio.volume(value); self.volume_text.setText(f"{value}%"); self.config.data["volume"]=value; self.config.write()
     def set_theme(self,name):
-        bg,panel,cart,fg,accent=THEMES.get(name,THEMES["Escuro Padrão"]); style=BASE_STYLE.replace("@BG",bg).replace("@FG",fg).replace("@PANEL",panel).replace("@CART",cart).replace("@ACCENT",accent)
+        bg,panel,cart,cart_alt,fg,accent=THEMES.get(name,THEMES["Escuro Padrão"]); style=BASE_STYLE.replace("@BG",bg).replace("@FG",fg).replace("@PANEL",panel).replace("@CARTALT",cart_alt).replace("@CART",cart).replace("@ACCENT",accent)
         self.setStyleSheet(style); self.theme_heading.setStyleSheet(f"color:{accent};font-weight:800"); self.config.data["theme"]=name; self.config.write()
     @staticmethod
     def stamp(value): value=max(0,int(value)); return f"{value//60:02}:{value%60:02}"
@@ -83,7 +83,7 @@ class MainWindow(QMainWindow):
         if self.current is None:return
         if not self.audio.paused:self.elapsed+=.1
         if not self.audio.busy():self.stop();return
-        duration=max(.01,self.audio.duration); self.carts[self.current].set_time(self.stamp(self.elapsed),self.stamp(duration))
+        duration=max(.01,self.audio.duration); cart=self.carts[self.current]; cart.set_time(self.stamp(self.elapsed),self.stamp(duration)); cart.set_progress(self.elapsed/duration*1000)
     def cart_menu(self,index):
         menu=QMenu(self); change=QAction("Trocar áudio…",self); rename=QAction("Renomear…",self); color=QAction("Alterar cor…",self); clear=QAction("Limpar",self)
         change.triggered.connect(lambda:self.change_audio(index)); rename.triggered.connect(lambda:self.rename(index)); color.triggered.connect(lambda:self.change_color(index)); clear.triggered.connect(lambda:self.clear(index))
