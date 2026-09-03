@@ -41,8 +41,7 @@ class MainWindow(QMainWindow):
         title=self.panel("titleBar"); row=QHBoxLayout(title); row.setContentsMargins(18,5,18,5)
         self.brand=QLabel(); self.brand.setObjectName("brand"); row.addWidget(self.brand); row.addStretch(); main.addWidget(title)
         controls=self.panel("controlBar"); row=QHBoxLayout(controls); row.setContentsMargins(14,7,14,7)
-        theme_box=QVBoxLayout(); self.theme_heading=QLabel("TEMA"); self.theme_heading.setAlignment(Qt.AlignmentFlag.AlignCenter); self.theme_heading.setStyleSheet("font-weight:800"); theme_box.addWidget(self.theme_heading)
-        self.theme=QComboBox(); self.theme.addItems(THEMES); self.theme.setCurrentText(self.config.data.get("theme","Escuro Padrão")); self.theme.currentTextChanged.connect(self.set_theme); theme_box.addWidget(self.theme); row.addLayout(theme_box)
+        self.theme=QComboBox(controls); self.theme.addItems(THEMES); self.theme.setCurrentText(self.config.data.get("theme","Escuro Padrão")); self.theme.currentTextChanged.connect(self.set_theme); self.theme.hide()
         volume_box=QVBoxLayout(); volume_heading=QLabel("VOLUME GERAL"); volume_heading.setFixedWidth(145); volume_heading.setAlignment(Qt.AlignmentFlag.AlignCenter); volume_heading.setStyleSheet("font-weight:800"); heading_line=QHBoxLayout(); heading_line.addSpacing(28); heading_line.addWidget(volume_heading); heading_line.addSpacing(38); volume_box.addLayout(heading_line); line=QHBoxLayout(); line.addWidget(QLabel("🔊"))
         self.volume=QSlider(Qt.Orientation.Horizontal); self.volume.setRange(0,100); self.volume.setValue(self.config.data.get("volume",80)); self.volume.setFixedWidth(145); self.volume.valueChanged.connect(self.set_volume); line.addWidget(self.volume); self.volume_text=QLabel(); line.addWidget(self.volume_text); volume_box.addLayout(line); row.addLayout(volume_box)
         row.addStretch(); logo_panel=QFrame(); logo_panel.setObjectName("logo"); logo_panel.setFixedSize(245,112); logo_box=QVBoxLayout(logo_panel); logo_box.setContentsMargins(5,3,5,3); logo_box.setSpacing(0)
@@ -122,7 +121,7 @@ class MainWindow(QMainWindow):
     def set_volume(self,value): self.audio.volume(value); self.volume_text.setText(f"{value}%"); self.config.data["volume"]=value; self.config.write()
     def set_theme(self,name):
         bg,panel,cart,cart_alt,fg,accent=THEMES.get(name,THEMES["Escuro Padrão"]); style=BASE_STYLE.replace("@BG",bg).replace("@FG",fg).replace("@PANEL",panel).replace("@CARTALT",cart_alt).replace("@CART",cart).replace("@ACCENT",accent)
-        self.setStyleSheet(style); self.theme_heading.setStyleSheet("font-weight:800"); self.config.data["theme"]=name; self.config.write()
+        self.setStyleSheet(style); self.config.data["theme"]=name; self.config.write()
     @staticmethod
     def stamp(value): value=max(0,int(value)); return f"{value//60:02}:{value%60:02}"
     def tick(self):
@@ -151,9 +150,12 @@ class MainWindow(QMainWindow):
         if normalized in self.config.data["shortcuts"] and normalized!=current: QMessageBox.warning(self,"Atalho","Este atalho já pertence a outro cartucho."); return
         self.config.data["shortcuts"][index]=normalized; self.config.write(); self.key_bindings[index].setKey(sequence); self.carts[index].set_shortcut(normalized)
     def settings_menu(self,button):
-        menu=QMenu(self); import_action=QAction("↓  Importar programação…",self); export_action=QAction("↑  Exportar programação…",self); rename_app=QAction("Alterar nome da cartucheira…",self); symbol=QAction("Trocar símbolo…",self); device=QAction("Saída de som…",self); restore=QAction("Restaurar configurações originais",self); about=QAction("Sobre",self)
-        import_action.triggered.connect(self.import_backup); export_action.triggered.connect(self.export_backup); rename_app.triggered.connect(self.change_app_name); symbol.triggered.connect(self.change_symbol); device.triggered.connect(self.choose_device); restore.triggered.connect(self.restore_defaults); about.triggered.connect(lambda:QMessageBox.about(self,"Cartucheira MBS","Cartucheira MBS v0.1\nSistema profissional de áudio para rádio e estúdio.\nNormalização automática ativada."))
-        menu.addActions([import_action,export_action]); menu.addSeparator(); menu.addActions([rename_app,symbol,device]); menu.addSeparator(); menu.addAction(restore); menu.addSeparator(); menu.addAction(about); menu.exec(button.mapToGlobal(button.rect().bottomLeft()))
+        menu=QMenu(self); import_action=QAction("↓  Importar programação…",self); export_action=QAction("↑  Exportar programação…",self); theme_action=QAction("Alterar tema…",self); rename_app=QAction("Alterar nome da cartucheira…",self); symbol=QAction("Trocar símbolo…",self); device=QAction("Saída de som…",self); restore=QAction("Restaurar configurações originais",self); about=QAction("Sobre",self)
+        import_action.triggered.connect(self.import_backup); export_action.triggered.connect(self.export_backup); theme_action.triggered.connect(self.choose_theme); rename_app.triggered.connect(self.change_app_name); symbol.triggered.connect(self.change_symbol); device.triggered.connect(self.choose_device); restore.triggered.connect(self.restore_defaults); about.triggered.connect(lambda:QMessageBox.about(self,"Cartucheira MBS","Cartucheira MBS v0.1\nSistema profissional de áudio para rádio e estúdio.\nNormalização automática ativada."))
+        menu.addActions([import_action,export_action]); menu.addSeparator(); menu.addActions([theme_action,rename_app,symbol,device]); menu.addSeparator(); menu.addAction(restore); menu.addSeparator(); menu.addAction(about); menu.exec(button.mapToGlobal(button.rect().bottomLeft()))
+    def choose_theme(self):
+        names=list(THEMES); current=self.config.data.get("theme","Escuro Padrão"); selected,ok=QInputDialog.getItem(self,"Tema","Escolha o tema:",names,max(0,names.index(current) if current in names else 0),False)
+        if ok:self.theme.setCurrentText(selected)
     def change_app_name(self):
         current=self.config.data.get("app_name","MBS"); name,ok=QInputDialog.getText(self,"Nome da cartucheira","Novo nome:",text=current)
         if ok and name.strip(): self.config.data["app_name"]=name.strip()[:24]; self.config.write(); self.refresh_identity()
