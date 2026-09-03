@@ -100,7 +100,9 @@ class MainWindow(QMainWindow):
         if self.current is not None:self.carts[self.current].playing(False)
         self.current=None; self.elapsed=0; self.fading=False
     def toggle_queue_mode(self):
-        self.queue_mode=not self.queue_mode; self.queue_button.setProperty("active",self.queue_mode)
+        self.queue_mode=not self.queue_mode
+        if not self.queue_mode:self.play_queue.clear()
+        self.queue_button.setProperty("active",self.queue_mode)
         self.queue_button.style().unpolish(self.queue_button); self.queue_button.style().polish(self.queue_button); self.refresh_queue()
     def refresh_queue(self):
         for cart in self.carts:cart.set_queue_position(None)
