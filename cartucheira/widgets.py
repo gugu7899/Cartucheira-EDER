@@ -1,5 +1,24 @@
-from PyQt6.QtCore import QEvent,Qt,pyqtSignal
-from PyQt6.QtWidgets import QFrame,QHBoxLayout,QLabel,QProgressBar,QPushButton,QVBoxLayout
+from PyQt6.QtCore import QEvent,QRectF,Qt,pyqtSignal
+from PyQt6.QtGui import QColor,QLinearGradient,QPainter
+from PyQt6.QtWidgets import QFrame,QHBoxLayout,QLabel,QProgressBar,QPushButton,QVBoxLayout,QWidget
+
+class Spectrum(QWidget):
+    def __init__(self,bars=24):
+        super().__init__(); self.levels=[0.0]*bars; self.peaks=[0.0]*bars; self.setFixedHeight(24)
+    def set_levels(self,values):
+        for i,target in enumerate(values[:len(self.levels)]):
+            target=max(0.0,min(1.0,float(target))); speed=.52 if target>self.levels[i] else .20
+            self.levels[i]+=((target-self.levels[i])*speed); self.peaks[i]=max(self.levels[i],self.peaks[i]-.035)
+        self.update()
+    def paintEvent(self,event):
+        painter=QPainter(self); painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        count=len(self.levels); gap=2.0; width=max(2.0,(self.width()-gap*(count-1))/count); height=self.height()-3
+        gradient=QLinearGradient(0,self.height(),0,0); gradient.setColorAt(0,QColor("#ff7a00")); gradient.setColorAt(.65,QColor("#ff9d22")); gradient.setColorAt(1,QColor("#ffd166"))
+        painter.setPen(Qt.PenStyle.NoPen)
+        for i,(level,peak) in enumerate(zip(self.levels,self.peaks)):
+            x=i*(width+gap); bar_height=max(2.0,height*level); painter.setBrush(gradient); painter.drawRoundedRect(QRectF(x,self.height()-bar_height,width,bar_height),1.2,1.2)
+            if peak>.08:
+                painter.setBrush(QColor("#fff1cf")); peak_y=max(0.0,self.height()-height*peak-2); painter.drawRoundedRect(QRectF(x,peak_y,width,1.5),.7,.7)
 
 class Cart(QFrame):
     triggered=pyqtSignal(int); menu_requested=pyqtSignal(int)
@@ -11,10 +30,7 @@ class Cart(QFrame):
         self.menu=QPushButton("⋮"); self.menu.setObjectName("dots"); self.menu.setFixedSize(24,24); self.menu.clicked.connect(lambda:self.menu_requested.emit(index)); top.addWidget(self.menu); box.addLayout(top)
         self.button=QPushButton(); self.button.setObjectName("trigger"); self.button.clicked.connect(lambda:self.triggered.emit(index)); box.addWidget(self.button,1)
         self.time=QLabel("00:00 / 00:00"); self.time.setObjectName("cartTime"); self.time.setAlignment(Qt.AlignmentFlag.AlignCenter); self.time.hide(); box.addWidget(self.time)
-        self.spectrum=QFrame(); self.spectrum.setFixedHeight(20); spectrum_row=QHBoxLayout(self.spectrum); spectrum_row.setContentsMargins(10,0,10,0); spectrum_row.setSpacing(2)
-        self.bars=[]
-        for _ in range(18):
-            bar=QFrame(); bar.setFixedWidth(4); spectrum_row.addWidget(bar,0,Qt.AlignmentFlag.AlignBottom); self.bars.append(bar)
+        self.spectrum=Spectrum(24); self.bars=self.spectrum.levels
         self.spectrum.hide(); box.addWidget(self.spectrum)
         self.color_bar=QProgressBar(); self.color_bar.setObjectName("audioProgress"); self.color_bar.setRange(0,1000); self.color_bar.setValue(0); self.color_bar.setTextVisible(False); self.color_bar.setFixedHeight(3); box.addWidget(self.color_bar)
         for widget in (self.number,self.shortcut,self.color_bar,self.spectrum,self.time):
@@ -30,14 +46,13 @@ class Cart(QFrame):
     def set_color(self,color):
         self.color=color or ""
         self.setStyleSheet(f"QFrame#cart{{background:{self.color};}}" if self.color else "")
-        for bar in self.bars: bar.setStyleSheet("background:#ff8a00;border-radius:1px")
     def playing(self,value):
         self.setProperty("playing",value)
         self.spectrum.setVisible(value); self.time.setVisible(value)
         if not value:self.time.setText("00:00 / 00:00"); self.color_bar.setValue(0)
         self.style().unpolish(self); self.style().polish(self)
     def set_spectrum(self,levels):
-        for bar,level in zip(self.bars,levels): bar.setFixedHeight(3+int(16*max(0,min(1,level))))
+        self.spectrum.set_levels(levels)
     def set_time(self,elapsed,duration): self.time.setText(f"{elapsed} / {duration}")
     def set_progress(self,value): self.color_bar.setValue(max(0,min(1000,int(value))))
     def eventFilter(self,obj,event):
