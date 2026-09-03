@@ -7,7 +7,7 @@ class Cart(QFrame):
         super().__init__(); self.index=index; self.color=""
         self.setObjectName("cart"); self.setProperty("playing",False); self.setProperty("alternate",bool(((index//6)+(index%6))%2))
         box=QVBoxLayout(self); box.setContentsMargins(9,5,5,5); box.setSpacing(2)
-        top=QHBoxLayout(); self.number=QLabel(f"{index+1:02}"); self.number.setObjectName("number"); top.addWidget(self.number); top.addStretch(); self.shortcut=QLabel(); self.shortcut.setObjectName("shortcut"); top.addWidget(self.shortcut)
+        top=QHBoxLayout(); self.number=QLabel(f"{index+1:02}"); self.number.setObjectName("number"); top.addWidget(self.number); self.queue_badge=QLabel(); self.queue_badge.setObjectName("queueBadge"); self.queue_badge.hide(); top.addWidget(self.queue_badge); top.addStretch(); self.shortcut=QLabel(); self.shortcut.setObjectName("shortcut"); top.addWidget(self.shortcut)
         self.menu=QPushButton("⋮"); self.menu.setObjectName("dots"); self.menu.setFixedSize(24,24); self.menu.clicked.connect(lambda:self.menu_requested.emit(index)); top.addWidget(self.menu); box.addLayout(top)
         self.button=QPushButton(); self.button.setObjectName("trigger"); self.button.clicked.connect(lambda:self.triggered.emit(index)); box.addWidget(self.button,1)
         self.time=QLabel("00:00 / 00:00"); self.time.setObjectName("cartTime"); self.time.setAlignment(Qt.AlignmentFlag.AlignCenter); self.time.hide(); box.addWidget(self.time)
@@ -20,6 +20,11 @@ class Cart(QFrame):
         for widget in (self.number,self.shortcut,self.color_bar,self.spectrum,self.time):
             widget.installEventFilter(self)
     def set_shortcut(self,text): self.shortcut.setText(text)
+    def set_queue_position(self,position=None):
+        self.setProperty("queued",position is not None)
+        self.queue_badge.setText(f"FILA {position}" if position is not None else "")
+        self.queue_badge.setVisible(position is not None)
+        self.style().unpolish(self); self.style().polish(self)
     def set_locked(self,value): self.menu.setVisible(not value)
     def name(self,text): self.button.setText(text); self.button.setToolTip(text)
     def set_color(self,color):
