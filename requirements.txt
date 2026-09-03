@@ -1,4 +1,4 @@
 PyQt6
 pygame
+numpy
 pyinstaller
-Pillow
