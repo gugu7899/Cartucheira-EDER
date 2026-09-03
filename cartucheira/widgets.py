@@ -9,7 +9,6 @@ class Cart(QFrame):
         self.setObjectName("cart"); self.setProperty("playing",False); self.setProperty("alternate",bool(index%2))
         box=QVBoxLayout(self); box.setContentsMargins(9,5,5,5); box.setSpacing(2)
         top=QHBoxLayout(); self.number=QLabel(f"{index+1:02}"); self.number.setObjectName("number"); top.addWidget(self.number); top.addStretch()
-        self.led=QLabel("●"); self.led.setObjectName("led"); self.led.setProperty("active",False); top.addWidget(self.led)
         self.menu=QPushButton("⋮"); self.menu.setObjectName("dots"); self.menu.setFixedSize(24,24); self.menu.clicked.connect(lambda:self.menu_requested.emit(index)); top.addWidget(self.menu); box.addLayout(top)
         self.button=QPushButton(); self.button.setObjectName("trigger"); self.button.clicked.connect(lambda:self.triggered.emit(index)); box.addWidget(self.button,1)
         self.time=QLabel("00:00 / 00:00"); self.time.setObjectName("cartTime"); self.time.setAlignment(Qt.AlignmentFlag.AlignCenter); self.time.hide(); box.addWidget(self.time)
@@ -20,19 +19,18 @@ class Cart(QFrame):
         self.spectrum.hide(); box.addWidget(self.spectrum)
         self.color_bar=QProgressBar(); self.color_bar.setObjectName("audioProgress"); self.color_bar.setRange(0,1000); self.color_bar.setValue(0); self.color_bar.setTextVisible(False); self.color_bar.setFixedHeight(3); box.addWidget(self.color_bar)
         self.phase=0; self.animator=QTimer(self); self.animator.setInterval(75); self.animator.timeout.connect(self.animate_spectrum)
-        for widget in (self.number,self.led,self.color_bar,self.spectrum,self.time):
+        for widget in (self.number,self.color_bar,self.spectrum,self.time):
             widget.installEventFilter(self)
     def name(self,text): self.button.setText(text); self.button.setToolTip(text)
     def set_color(self,color):
         self.color=color or "#ff8a00"
         for bar in self.bars: bar.setStyleSheet(f"background:{self.color};border-radius:1px")
     def playing(self,value):
-        self.setProperty("playing",value); self.led.setProperty("active",value)
-        self.led.setStyleSheet(f"color:{self.color if value else '#444'}")
+        self.setProperty("playing",value)
         self.spectrum.setVisible(value); self.time.setVisible(value)
         if not value:self.time.setText("00:00 / 00:00"); self.color_bar.setValue(0)
         self.animator.start() if value else self.animator.stop()
-        for w in (self,self.led): w.style().unpolish(w); w.style().polish(w)
+        self.style().unpolish(self); self.style().polish(self)
     def animate_spectrum(self):
         self.phase+=1
         for i,bar in enumerate(self.bars):
