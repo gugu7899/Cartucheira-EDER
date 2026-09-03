@@ -27,14 +27,14 @@ class Config:
         self.data = self.load()
     @staticmethod
     def defaults():
-        return {"version":1,"volume":80,"theme":"Escuro Padrão","app_name":"MBS","symbol":"preset:logo.png","carts":[{"name":n,"audio":f"preset:{i+1:02}.wav","color":"#ff8a00"} for i,n in enumerate(NAMES)]}
+        return {"version":1,"volume":80,"theme":"Escuro Padrão","app_name":"MBS","symbol":"preset:logo.png","output_device":"Padrão do sistema","carts":[{"name":n,"audio":f"preset:{i+1:02}.wav","color":"#ff8a00"} for i,n in enumerate(NAMES)]}
     def load(self):
         if self.path.exists():
             try:
                 data=json.loads(self.path.read_text(encoding="utf-8"))
                 if len(data.get("carts",[]))==36:
                     data.setdefault("theme","Escuro Padrão")
-                    data.setdefault("app_name","MBS"); data.setdefault("symbol","preset:logo.png")
+                    data.setdefault("app_name","MBS"); data.setdefault("symbol","preset:logo.png"); data.setdefault("output_device","Padrão do sistema")
                     for cart in data["carts"]: cart.setdefault("color","#ff8a00")
                     return data
             except Exception: pass

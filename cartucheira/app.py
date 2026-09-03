@@ -1,6 +1,6 @@
 from pathlib import Path
 from PyQt6.QtCore import Qt,QTimer
-from PyQt6.QtGui import QAction,QCloseEvent,QColor,QImage,QPixmap
+from PyQt6.QtGui import QAction,QCloseEvent,QColor,QImage,QKeySequence,QPixmap,QShortcut
 from PyQt6.QtWidgets import (QColorDialog,QComboBox,QFileDialog,QFrame,QGridLayout,QHBoxLayout,QInputDialog,QLabel,QMainWindow,QMenu,QMessageBox,QPushButton,QSlider,QVBoxLayout,QWidget)
 from .audio import Audio
 from .config import Config,resource
@@ -14,12 +14,13 @@ THEMES={
 BASE_STYLE='''
 QWidget{background:@BG;color:@FG;font-family:"Segoe UI";font-size:10pt} QLabel{background:transparent} QMainWindow{background:@BG}
 #titleBar,#footer{background:@PANEL;border:1px solid #303238;border-radius:7px} #controlBar{background:@BG;border:0}
-#brand{font-size:17pt;font-weight:800} #logo{background:transparent;border-left:1px solid #303238;border-right:1px solid #303238}
+#brand{font-size:17pt;font-weight:800} #logo{background:transparent;border:0}
 QPushButton{background:#1d1f22;border:1px solid #484b50;border-radius:6px;padding:7px 12px;font-weight:700}
 QPushButton:hover{border-color:@ACCENT;background:#25272b} QPushButton:pressed{background:@ACCENT;color:#111}
 #stop{min-width:92px} #cart{background:@CART;border:1px solid #55585d;border-radius:8px} #cart[alternate="true"]{background:@CARTALT} #cart:hover{border-color:#8b8b8b}
 #cart[playing="true"]{border:2px solid @ACCENT;background:@PANEL} #number{color:#bfc0c2;font-size:10pt;font-weight:700}
 #dots{background:transparent;border:0;padding:0;font-size:16pt}
+#shortcut{color:#8f959d;font-size:8pt;font-weight:700;margin-right:4px} #lockButton[locked="true"]{background:@ACCENT;color:#111}
 #trigger{background:transparent;border:0;font-size:11pt;font-weight:700;padding:0} #trigger:hover,#trigger:pressed{background:transparent;color:#ff9d2e}
 #cartTime{background:transparent;color:#c7c7c7;font-size:8pt;font-weight:600} #audioProgress{background:transparent;border:0} #audioProgress::chunk{background:#ff8a00;border-radius:1px}
 QSlider{background:transparent} QSlider::groove:horizontal{height:4px;background:#30343a;border-radius:2px} QSlider::handle:horizontal{width:15px;margin:-5px 0;background:@ACCENT;border-radius:7px}
@@ -28,8 +29,9 @@ QMenu{background:#202225;border:1px solid #555;padding:5px} QMenu::item{padding:
 '''
 
 class MainWindow(QMainWindow):
+    KEYS=["1","2","3","4","5","6","Q","W","E","R","T","Y","A","S","D","F","G","H","Z","X","C","V","B","N","F1","F2","F3","F4","F5","F6","F7","F8","F9","F10","F11","F12"]
     def __init__(self):
-        super().__init__(); self.config=Config(); self.audio=Audio(); self.current=None; self.elapsed=0
+        super().__init__(); self.config=Config(); self.audio=Audio(self.config.data.get("output_device")); self.current=None; self.elapsed=0; self.fading=False; self.locked=False
         self.setWindowTitle("Cartucheira MBS"); self.setMinimumSize(1100,740); self.resize(1300,900)
         self.build(); self.refresh(); self.refresh_identity(); self.set_theme(self.config.data.get("theme","Escuro Padrão"))
         self.timer=QTimer(self); self.timer.timeout.connect(self.tick); self.timer.start(100)
@@ -46,12 +48,18 @@ class MainWindow(QMainWindow):
         row.addStretch(); logo_panel=QFrame(); logo_panel.setObjectName("logo"); logo_panel.setFixedSize(245,112); logo_box=QVBoxLayout(logo_panel); logo_box.setContentsMargins(5,3,5,3); logo_box.setSpacing(0)
         self.logo_image=QLabel(); self.logo_image.setAlignment(Qt.AlignmentFlag.AlignCenter); self.logo_name=QLabel(); self.logo_name.setAlignment(Qt.AlignmentFlag.AlignCenter); self.logo_name.setStyleSheet("font-size:15pt;font-weight:900;letter-spacing:2px")
         logo_box.addWidget(self.logo_image,1); logo_box.addWidget(self.logo_name); row.addWidget(logo_panel); row.addStretch()
+        self.program_controls=[self.theme]
         for text,handler in [("↓  IMPORTAR",self.import_backup),("↑  EXPORTAR",self.export_backup)]:
-            button=QPushButton(text); button.clicked.connect(handler); row.addWidget(button)
+            button=QPushButton(text); button.clicked.connect(handler); row.addWidget(button); self.program_controls.append(button)
+        self.lock_button=QPushButton("🔒  BLOQUEAR"); self.lock_button.setObjectName("lockButton"); self.lock_button.setProperty("locked",False); self.lock_button.clicked.connect(self.toggle_lock); row.addWidget(self.lock_button)
         settings=QPushButton("⚙"); settings.setFixedWidth(45); settings.clicked.connect(lambda:self.settings_menu(settings)); row.addWidget(settings); main.addWidget(controls)
+        self.program_controls.append(settings)
         grid=QGridLayout(); grid.setSpacing(8); self.carts=[]
         for i in range(36):
-            cart=Cart(i); cart.triggered.connect(self.play); cart.menu_requested.connect(self.cart_menu); grid.addWidget(cart,i//6,i%6); self.carts.append(cart)
+            cart=Cart(i); cart.set_shortcut(self.KEYS[i]); cart.triggered.connect(self.play); cart.menu_requested.connect(self.cart_menu); grid.addWidget(cart,i//6,i%6); self.carts.append(cart)
+        self.key_bindings=[]
+        for i,key in enumerate(self.KEYS):
+            shortcut=QShortcut(QKeySequence(key),self); shortcut.activated.connect(lambda index=i:self.play(index)); self.key_bindings.append(shortcut)
         main.addLayout(grid,1)
         owner=QLabel("Desenvolvedor Marcelo Soares"); owner.setStyleSheet("background:transparent;border:0;font-size:11pt;font-weight:400;color:#f2f2f2;padding-right:4px"); owner.setAlignment(Qt.AlignmentFlag.AlignRight); main.addWidget(owner)
         self.set_volume(self.volume.value())
@@ -70,16 +78,23 @@ class MainWindow(QMainWindow):
                 if max(color.red(),color.green(),color.blue())<58: color.setAlpha(0); image.setPixelColor(x,y,color)
         self.logo_image.setPixmap(QPixmap.fromImage(image).scaled(105,72,Qt.AspectRatioMode.KeepAspectRatio,Qt.TransformationMode.SmoothTransformation))
     def play(self,index):
-        if self.current==index and self.audio.busy(): self.stop(); return
+        if self.current==index and self.audio.busy():
+            if not self.fading:self.fading=True; self.audio.fadeout(650)
+            return
         item=self.config.data["carts"][index]; path=self.config.resolve(item.get("audio",""))
         if not path:return
         try:
-            self.stop(); self.audio.play(path,self.volume.value()); self.current=index; self.elapsed=0; self.carts[index].playing(True)
+            self.stop(); self.audio.play(path,self.volume.value()); self.current=index; self.elapsed=0; self.fading=False; self.carts[index].playing(True)
         except Exception as exc: QMessageBox.warning(self,"Áudio",f"Não foi possível reproduzir este áudio.\n\n{exc}")
     def stop(self):
         self.audio.stop()
         if self.current is not None:self.carts[self.current].playing(False)
-        self.current=None; self.elapsed=0
+        self.current=None; self.elapsed=0; self.fading=False
+    def toggle_lock(self):
+        self.locked=not self.locked; self.lock_button.setText("🔓  DESBLOQUEAR" if self.locked else "🔒  BLOQUEAR"); self.lock_button.setProperty("locked",self.locked)
+        self.lock_button.style().unpolish(self.lock_button); self.lock_button.style().polish(self.lock_button)
+        for control in self.program_controls: control.setEnabled(not self.locked)
+        for cart in self.carts: cart.set_locked(self.locked)
     def set_volume(self,value): self.audio.volume(value); self.volume_text.setText(f"{value}%"); self.config.data["volume"]=value; self.config.write()
     def set_theme(self,name):
         bg,panel,cart,cart_alt,fg,accent=THEMES.get(name,THEMES["Escuro Padrão"]); style=BASE_STYLE.replace("@BG",bg).replace("@FG",fg).replace("@PANEL",panel).replace("@CARTALT",cart_alt).replace("@CART",cart).replace("@ACCENT",accent)
@@ -90,7 +105,7 @@ class MainWindow(QMainWindow):
         if self.current is None:return
         if not self.audio.paused:self.elapsed+=.1
         if not self.audio.busy():self.stop();return
-        duration=max(.01,self.audio.duration); cart=self.carts[self.current]; cart.set_time(self.stamp(self.elapsed),self.stamp(duration)); cart.set_progress(self.elapsed/duration*1000)
+        duration=max(.01,self.audio.duration); cart=self.carts[self.current]; cart.set_time(self.stamp(self.elapsed),self.stamp(duration)); cart.set_progress(self.elapsed/duration*1000); cart.set_spectrum(self.audio.spectrum(self.elapsed,len(cart.bars)))
     def cart_menu(self,index):
         menu=QMenu(self); change=QAction("Trocar áudio…",self); rename=QAction("Renomear…",self); color=QAction("Alterar cor…",self); clear=QAction("Limpar",self)
         change.triggered.connect(lambda:self.change_audio(index)); rename.triggered.connect(lambda:self.rename(index)); color.triggered.connect(lambda:self.change_color(index)); clear.triggered.connect(lambda:self.clear(index))
@@ -105,15 +120,20 @@ class MainWindow(QMainWindow):
         current=QColor(self.config.data["carts"][index].get("color","#ff8a00")); chosen=QColorDialog.getColor(current,self,"Cor do cartucho")
         if chosen.isValid(): self.config.data["carts"][index]["color"]=chosen.name(); self.config.write(); self.carts[index].set_color(chosen.name())
     def settings_menu(self,button):
-        menu=QMenu(self); rename_app=QAction("Alterar nome da cartucheira…",self); symbol=QAction("Trocar símbolo…",self); restore=QAction("Restaurar configurações originais",self); about=QAction("Sobre",self)
-        rename_app.triggered.connect(self.change_app_name); symbol.triggered.connect(self.change_symbol); restore.triggered.connect(self.restore_defaults); about.triggered.connect(lambda:QMessageBox.about(self,"Cartucheira MBS","Cartucheira MBS v0.1\nSistema profissional de áudio para rádio e estúdio."))
-        menu.addActions([rename_app,symbol]); menu.addSeparator(); menu.addAction(restore); menu.addSeparator(); menu.addAction(about); menu.exec(button.mapToGlobal(button.rect().bottomLeft()))
+        menu=QMenu(self); rename_app=QAction("Alterar nome da cartucheira…",self); symbol=QAction("Trocar símbolo…",self); device=QAction("Saída de som…",self); restore=QAction("Restaurar configurações originais",self); about=QAction("Sobre",self)
+        rename_app.triggered.connect(self.change_app_name); symbol.triggered.connect(self.change_symbol); device.triggered.connect(self.choose_device); restore.triggered.connect(self.restore_defaults); about.triggered.connect(lambda:QMessageBox.about(self,"Cartucheira MBS","Cartucheira MBS v0.1\nSistema profissional de áudio para rádio e estúdio.\nNormalização automática ativada."))
+        menu.addActions([rename_app,symbol,device]); menu.addSeparator(); menu.addAction(restore); menu.addSeparator(); menu.addAction(about); menu.exec(button.mapToGlobal(button.rect().bottomLeft()))
     def change_app_name(self):
         current=self.config.data.get("app_name","MBS"); name,ok=QInputDialog.getText(self,"Nome da cartucheira","Novo nome:",text=current)
         if ok and name.strip(): self.config.data["app_name"]=name.strip()[:24]; self.config.write(); self.refresh_identity()
     def change_symbol(self):
         filename,_=QFileDialog.getOpenFileName(self,"Selecionar símbolo","","Imagens (*.png *.jpg *.jpeg *.bmp *.webp)")
         if filename:self.config.set_symbol(Path(filename)); self.refresh_identity()
+    def choose_device(self):
+        devices=self.audio.devices(); current=self.config.data.get("output_device","Padrão do sistema"); selected,ok=QInputDialog.getItem(self,"Saída de som","Dispositivo:",devices,max(0,devices.index(current) if current in devices else 0),False)
+        if ok:
+            try:self.stop(); self.audio.set_device(selected); self.audio.volume(self.volume.value()); self.config.data["output_device"]=selected; self.config.write()
+            except Exception as exc:QMessageBox.warning(self,"Saída de som",f"Não foi possível usar este dispositivo.\n\n{exc}")
     def restore_defaults(self):
         if QMessageBox.question(self,"Restaurar cartuchos","Restaurar nomes, cores e efeitos originais dos 36 cartuchos?")==QMessageBox.StandardButton.Yes:
             self.stop(); self.config.data=Config.defaults(); self.config.write(); self.volume.setValue(80); self.theme.setCurrentText("Escuro Padrão"); self.refresh(); self.refresh_identity()
