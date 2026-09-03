@@ -18,7 +18,7 @@ QWidget{background:@BG;color:@FG;font-family:"Segoe UI";font-size:10pt} QLabel{b
 QPushButton{background:#1d1f22;border:1px solid #484b50;border-radius:6px;padding:7px 12px;font-weight:700}
 QPushButton:hover{border-color:@ACCENT;background:#25272b} QPushButton:pressed{background:@ACCENT;color:#111}
 #stop{min-width:92px} #cart{background:@CART;border:1px solid #55585d;border-radius:8px} #cart[alternate="true"]{background:@CARTALT} #cart:hover{border-color:#8b8b8b}
-#cart[playing="true"]{border:2px solid @ACCENT;background:@PANEL} #number{color:#bfc0c2;font-size:10pt;font-weight:700}
+#cart[playing="true"]{border:2px solid @ACCENT} #number{color:#bfc0c2;font-size:10pt;font-weight:700}
 #dots{background:transparent;border:0;padding:0;font-size:16pt}
 #shortcut{color:#8f959d;font-size:8pt;font-weight:700;margin-right:4px} #lockButton[locked="true"]{background:@ACCENT;color:#111}
 #trigger{background:transparent;border:0;font-size:11pt;font-weight:700;padding:0} #trigger:hover,#trigger:pressed{background:transparent;color:#ff9d2e}
@@ -65,7 +65,7 @@ class MainWindow(QMainWindow):
         self.set_volume(self.volume.value())
     def refresh(self):
         for i,cart in enumerate(self.carts):
-            item=self.config.data["carts"][i]; cart.name(item.get("name","")); cart.set_color(item.get("color","#ff8a00"))
+            item=self.config.data["carts"][i]; cart.name(item.get("name","")); cart.set_color(item.get("color",""))
     def refresh_identity(self):
         name=self.config.data.get("app_name","MBS").strip() or "MBS"
         self.brand.setText(f'CARTUCHEIRA <span style="color:#ff8a00">{name}</span>'); self.logo_name.setText(name); self.setWindowTitle(f"Cartucheira {name}")
@@ -117,7 +117,7 @@ class MainWindow(QMainWindow):
         value=self.config.data["carts"][index].get("name",""); name,ok=QInputDialog.getText(self,"Renomear cartucho","Nome personalizado:",text=value)
         if ok:self.config.data["carts"][index]["name"]=name.strip()[:40]; self.config.write(); self.carts[index].name(name.strip()[:40])
     def change_color(self,index):
-        current=QColor(self.config.data["carts"][index].get("color","#ff8a00")); chosen=QColorDialog.getColor(current,self,"Cor do cartucho")
+        current=QColor(self.config.data["carts"][index].get("color") or "#303338"); chosen=QColorDialog.getColor(current,self,"Cor do cartucho")
         if chosen.isValid(): self.config.data["carts"][index]["color"]=chosen.name(); self.config.write(); self.carts[index].set_color(chosen.name())
     def settings_menu(self,button):
         menu=QMenu(self); rename_app=QAction("Alterar nome da cartucheira…",self); symbol=QAction("Trocar símbolo…",self); device=QAction("Saída de som…",self); restore=QAction("Restaurar configurações originais",self); about=QAction("Sobre",self)
