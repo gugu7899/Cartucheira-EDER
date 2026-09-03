@@ -76,7 +76,7 @@ class MainWindow(QMainWindow):
     def set_volume(self,value): self.audio.volume(value); self.volume_text.setText(f"{value}%"); self.config.data["volume"]=value; self.config.write()
     def set_theme(self,name):
         bg,panel,cart,cart_alt,fg,accent=THEMES.get(name,THEMES["Escuro Padrão"]); style=BASE_STYLE.replace("@BG",bg).replace("@FG",fg).replace("@PANEL",panel).replace("@CARTALT",cart_alt).replace("@CART",cart).replace("@ACCENT",accent)
-        self.setStyleSheet(style); self.theme_heading.setStyleSheet(f"color:{accent};font-weight:800"); self.config.data["theme"]=name; self.config.write()
+        self.setStyleSheet(style); self.theme_heading.setStyleSheet("font-weight:800"); self.config.data["theme"]=name; self.config.write()
     @staticmethod
     def stamp(value): value=max(0,int(value)); return f"{value//60:02}:{value%60:02}"
     def tick(self):
