@@ -6,7 +6,7 @@ class Cart(QFrame):
     triggered=pyqtSignal(int); menu_requested=pyqtSignal(int)
     def __init__(self,index):
         super().__init__(); self.index=index; self.color="#ff8a00"
-        self.setObjectName("cart"); self.setProperty("playing",False); self.setProperty("alternate",bool(index%2))
+        self.setObjectName("cart"); self.setProperty("playing",False); self.setProperty("alternate",bool(((index//6)+(index%6))%2))
         box=QVBoxLayout(self); box.setContentsMargins(9,5,5,5); box.setSpacing(2)
         top=QHBoxLayout(); self.number=QLabel(f"{index+1:02}"); self.number.setObjectName("number"); top.addWidget(self.number); top.addStretch()
         self.menu=QPushButton("⋮"); self.menu.setObjectName("dots"); self.menu.setFixedSize(24,24); self.menu.clicked.connect(lambda:self.menu_requested.emit(index)); top.addWidget(self.menu); box.addLayout(top)
