@@ -19,7 +19,7 @@ QPushButton{background:#1d1f22;border:1px solid #484b50;border-radius:6px;paddin
 QPushButton:hover{border-color:@ACCENT;background:#25272b} QPushButton:pressed{background:@ACCENT;color:#111}
 #stop{min-width:92px} #cart{background:@CART;border:1px solid #55585d;border-radius:8px} #cart[alternate="true"]{background:@CARTALT} #cart:hover{border-color:#8b8b8b}
 #cart[playing="true"]{border:2px solid @ACCENT;background:@PANEL} #number{color:#bfc0c2;font-size:10pt;font-weight:700}
-#dots{background:transparent;border:0;padding:0;font-size:16pt} #led{color:#444;font-size:9pt}
+#dots{background:transparent;border:0;padding:0;font-size:16pt}
 #trigger{background:transparent;border:0;font-size:11pt;font-weight:700;padding:0} #trigger:hover,#trigger:pressed{background:transparent;color:#ff9d2e}
 #cartTime{background:transparent;color:#c7c7c7;font-size:8pt;font-weight:600} #audioProgress{background:transparent;border:0} #audioProgress::chunk{background:#ff8a00;border-radius:1px}
 QSlider{background:transparent} QSlider::groove:horizontal{height:4px;background:#30343a;border-radius:2px} QSlider::handle:horizontal{width:15px;margin:-5px 0;background:@ACCENT;border-radius:7px}
