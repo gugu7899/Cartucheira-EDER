@@ -48,8 +48,10 @@ class Audio:
         edges=np.geomspace(1,len(magnitudes),bars+1).astype(int); levels=[]
         for i in range(bars):
             band=magnitudes[edges[i]:max(edges[i]+1,edges[i+1])]
-            levels.append(float(np.log1p(band.mean())))
-        peak=max(levels) if levels else 1
-        return [v/peak if peak else 0 for v in levels]
+            levels.append(float(band.mean()))
+        # Escala fixa em decibéis: mantém a diferença real entre trechos
+        # fortes e fracos, em vez de fazer todas as janelas atingirem 100%.
+        reference=max(1.0,32768.0*len(window)/2.0)
+        return [max(0.0,min(1.0,(20*np.log10(max(v,1.0)/reference)+62.0)/56.0)) for v in levels]
     def busy(self): return bool(self.channel.get_busy() or self.paused)
     def close(self): self.stop(); pygame.mixer.quit()
