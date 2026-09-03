@@ -49,8 +49,6 @@ class MainWindow(QMainWindow):
         self.logo_image=QLabel(); self.logo_image.setAlignment(Qt.AlignmentFlag.AlignCenter); self.logo_name=QLabel(); self.logo_name.setAlignment(Qt.AlignmentFlag.AlignCenter); self.logo_name.setStyleSheet("font-size:15pt;font-weight:900;letter-spacing:2px")
         logo_box.addWidget(self.logo_image,1); logo_box.addWidget(self.logo_name); row.addWidget(logo_panel); row.addStretch()
         self.program_controls=[self.theme]
-        for text,handler in [("↓  IMPORTAR",self.import_backup),("↑  EXPORTAR",self.export_backup)]:
-            button=QPushButton(text); button.clicked.connect(handler); row.addWidget(button); self.program_controls.append(button)
         transmission_box=QVBoxLayout(); transmission_box.setSpacing(5)
         self.lock_button=QPushButton("🔒  BLOQUEAR"); self.lock_button.setObjectName("lockButton"); self.lock_button.setProperty("locked",False); self.lock_button.clicked.connect(self.toggle_lock); transmission_box.addWidget(self.lock_button)
         self.queue_button=QPushButton("☷  EM FILA"); self.queue_button.setObjectName("queueButton"); self.queue_button.setProperty("active",False); self.queue_button.clicked.connect(self.toggle_queue_mode); transmission_box.addWidget(self.queue_button); row.addLayout(transmission_box)
@@ -153,9 +151,9 @@ class MainWindow(QMainWindow):
         if normalized in self.config.data["shortcuts"] and normalized!=current: QMessageBox.warning(self,"Atalho","Este atalho já pertence a outro cartucho."); return
         self.config.data["shortcuts"][index]=normalized; self.config.write(); self.key_bindings[index].setKey(sequence); self.carts[index].set_shortcut(normalized)
     def settings_menu(self,button):
-        menu=QMenu(self); rename_app=QAction("Alterar nome da cartucheira…",self); symbol=QAction("Trocar símbolo…",self); device=QAction("Saída de som…",self); restore=QAction("Restaurar configurações originais",self); about=QAction("Sobre",self)
-        rename_app.triggered.connect(self.change_app_name); symbol.triggered.connect(self.change_symbol); device.triggered.connect(self.choose_device); restore.triggered.connect(self.restore_defaults); about.triggered.connect(lambda:QMessageBox.about(self,"Cartucheira MBS","Cartucheira MBS v0.1\nSistema profissional de áudio para rádio e estúdio.\nNormalização automática ativada."))
-        menu.addActions([rename_app,symbol,device]); menu.addSeparator(); menu.addAction(restore); menu.addSeparator(); menu.addAction(about); menu.exec(button.mapToGlobal(button.rect().bottomLeft()))
+        menu=QMenu(self); import_action=QAction("↓  Importar programação…",self); export_action=QAction("↑  Exportar programação…",self); rename_app=QAction("Alterar nome da cartucheira…",self); symbol=QAction("Trocar símbolo…",self); device=QAction("Saída de som…",self); restore=QAction("Restaurar configurações originais",self); about=QAction("Sobre",self)
+        import_action.triggered.connect(self.import_backup); export_action.triggered.connect(self.export_backup); rename_app.triggered.connect(self.change_app_name); symbol.triggered.connect(self.change_symbol); device.triggered.connect(self.choose_device); restore.triggered.connect(self.restore_defaults); about.triggered.connect(lambda:QMessageBox.about(self,"Cartucheira MBS","Cartucheira MBS v0.1\nSistema profissional de áudio para rádio e estúdio.\nNormalização automática ativada."))
+        menu.addActions([import_action,export_action]); menu.addSeparator(); menu.addActions([rename_app,symbol,device]); menu.addSeparator(); menu.addAction(restore); menu.addSeparator(); menu.addAction(about); menu.exec(button.mapToGlobal(button.rect().bottomLeft()))
     def change_app_name(self):
         current=self.config.data.get("app_name","MBS"); name,ok=QInputDialog.getText(self,"Nome da cartucheira","Novo nome:",text=current)
         if ok and name.strip(): self.config.data["app_name"]=name.strip()[:24]; self.config.write(); self.refresh_identity()
