@@ -27,7 +27,7 @@ class Config:
         self.data = self.load()
     @staticmethod
     def defaults():
-        return {"version":1,"volume":80,"theme":"Escuro Padrão","app_name":"MBS","symbol":"preset:logo.png","output_device":"Padrão do sistema","carts":[{"name":n,"audio":f"preset:{i+1:02}.wav","color":"#ff8a00"} for i,n in enumerate(NAMES)]}
+        return {"version":1,"volume":80,"theme":"Escuro Padrão","app_name":"MBS","symbol":"preset:logo.png","output_device":"Padrão do sistema","color_semantics_v2":True,"carts":[{"name":n,"audio":f"preset:{i+1:02}.wav","color":""} for i,n in enumerate(NAMES)]}
     def load(self):
         if self.path.exists():
             try:
@@ -35,7 +35,11 @@ class Config:
                 if len(data.get("carts",[]))==36:
                     data.setdefault("theme","Escuro Padrão")
                     data.setdefault("app_name","MBS"); data.setdefault("symbol","preset:logo.png"); data.setdefault("output_device","Padrão do sistema")
-                    for cart in data["carts"]: cart.setdefault("color","#ff8a00")
+                    if not data.get("color_semantics_v2"):
+                        for cart in data["carts"]:
+                            if cart.get("color")=="#ff8a00": cart["color"]=""
+                        data["color_semantics_v2"]=True
+                    for cart in data["carts"]: cart.setdefault("color","")
                     return data
             except Exception: pass
             shutil.copy2(self.path,self.path.with_suffix(".json.corrompido"))
@@ -63,7 +67,7 @@ class Config:
         return path if path.exists() else resource("assets/logo.png")
     def clear(self,index):
         old=self.data["carts"][index].get("audio","")
-        color=self.data["carts"][index].get("color","#ff8a00")
+        color=self.data["carts"][index].get("color","")
         self.data["carts"][index]={"name":"","audio":"","color":color}; self._unused(old); self.write()
     def _unused(self,value):
         if value and not value.startswith("preset:") and not any(c.get("audio")==value for c in self.data["carts"]):
