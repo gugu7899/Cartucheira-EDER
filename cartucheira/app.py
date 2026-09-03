@@ -1,3 +1,11 @@
+test_backup (test_config.TestConfig.test_backup) ... ok
+test_clear_and_reload (test_config.TestConfig.test_clear_and_reload) ... ok
+test_defaults (test_config.TestConfig.test_defaults) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.004s
+
+OK
 from pathlib import Path
 from PyQt6.QtCore import Qt,QTimer
 from PyQt6.QtGui import QAction,QCloseEvent,QColor,QImage,QPixmap
@@ -41,7 +49,7 @@ class MainWindow(QMainWindow):
         controls=self.panel("controlBar"); row=QHBoxLayout(controls); row.setContentsMargins(14,7,14,7)
         theme_box=QVBoxLayout(); self.theme_heading=QLabel("TEMA"); self.theme_heading.setAlignment(Qt.AlignmentFlag.AlignCenter); self.theme_heading.setStyleSheet("font-weight:800"); theme_box.addWidget(self.theme_heading)
         self.theme=QComboBox(); self.theme.addItems(THEMES); self.theme.setCurrentText(self.config.data.get("theme","Escuro Padrão")); self.theme.currentTextChanged.connect(self.set_theme); theme_box.addWidget(self.theme); row.addLayout(theme_box)
-        volume_box=QVBoxLayout(); volume_heading=QLabel("VOLUME GERAL"); volume_heading.setAlignment(Qt.AlignmentFlag.AlignCenter); volume_box.addWidget(volume_heading); line=QHBoxLayout(); line.addWidget(QLabel("🔊"))
+        volume_box=QVBoxLayout(); volume_heading=QLabel("VOLUME GERAL"); volume_heading.setAlignment(Qt.AlignmentFlag.AlignCenter); volume_heading.setStyleSheet("font-weight:800"); volume_box.addWidget(volume_heading); line=QHBoxLayout(); line.addWidget(QLabel("🔊"))
         self.volume=QSlider(Qt.Orientation.Horizontal); self.volume.setRange(0,100); self.volume.setValue(self.config.data.get("volume",80)); self.volume.setFixedWidth(145); self.volume.valueChanged.connect(self.set_volume); line.addWidget(self.volume); self.volume_text=QLabel(); line.addWidget(self.volume_text); volume_box.addLayout(line); row.addLayout(volume_box)
         row.addStretch(); logo=QLabel(); logo.setObjectName("logo"); logo.setAlignment(Qt.AlignmentFlag.AlignCenter); logo.setFixedSize(245,112)
         image=QImage(str(resource("assets/logo.png")))
