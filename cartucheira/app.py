@@ -38,8 +38,6 @@ class MainWindow(QMainWindow):
     def panel(self,name): f=QFrame(); f.setObjectName(name); return f
     def build(self):
         center=QWidget(); self.setCentralWidget(center); main=QVBoxLayout(center); main.setContentsMargins(12,8,12,6); main.setSpacing(8)
-        title=self.panel("titleBar"); row=QHBoxLayout(title); row.setContentsMargins(18,5,18,5)
-        self.brand=QLabel(); self.brand.setObjectName("brand"); row.addWidget(self.brand); row.addStretch(); main.addWidget(title)
         controls=self.panel("controlBar"); row=QHBoxLayout(controls); row.setContentsMargins(14,7,14,7)
         self.theme=QComboBox(controls); self.theme.addItems(THEMES); self.theme.setCurrentText(self.config.data.get("theme","Escuro Padrão")); self.theme.currentTextChanged.connect(self.set_theme); self.theme.hide()
         volume_box=QVBoxLayout(); volume_heading=QLabel("VOLUME GERAL"); volume_heading.setFixedWidth(145); volume_heading.setAlignment(Qt.AlignmentFlag.AlignCenter); volume_heading.setStyleSheet("font-weight:800"); heading_line=QHBoxLayout(); heading_line.addSpacing(28); heading_line.addWidget(volume_heading); heading_line.addSpacing(38); volume_box.addLayout(heading_line); line=QHBoxLayout(); line.addWidget(QLabel("🔊"))
@@ -60,7 +58,8 @@ class MainWindow(QMainWindow):
         for i,key in enumerate(self.config.data.get("shortcuts",DEFAULT_KEYS)):
             shortcut=QShortcut(QKeySequence(key),self); shortcut.activated.connect(lambda index=i:self.play(index)); self.key_bindings.append(shortcut)
         main.addLayout(grid,1)
-        owner=QLabel("Desenvolvedor Marcelo Soares"); owner.setStyleSheet("background:transparent;border:0;font-size:11pt;font-weight:400;color:#f2f2f2;padding-right:4px"); owner.setAlignment(Qt.AlignmentFlag.AlignRight); main.addWidget(owner)
+        footer=QHBoxLayout(); self.footer_brand=QLabel(); self.footer_brand.setStyleSheet("background:transparent;border:0;font-size:11pt;font-weight:400;color:#f2f2f2;padding-left:4px")
+        owner=QLabel("Desenvolvedor Marcelo Soares"); owner.setStyleSheet("background:transparent;border:0;font-size:11pt;font-weight:400;color:#f2f2f2;padding-right:4px"); owner.setAlignment(Qt.AlignmentFlag.AlignRight); footer.addWidget(self.footer_brand); footer.addStretch(); footer.addWidget(owner); main.addLayout(footer)
         self.set_volume(self.volume.value())
     def refresh(self):
         for i,cart in enumerate(self.carts):
@@ -70,7 +69,7 @@ class MainWindow(QMainWindow):
         for i,key in enumerate(keys): self.key_bindings[i].setKey(QKeySequence(key)); self.carts[i].set_shortcut(key)
     def refresh_identity(self):
         name=self.config.data.get("app_name","MBS").strip() or "MBS"
-        self.brand.setText(f'CARTUCHEIRA <span style="color:#ff8a00">{name}</span>'); self.logo_name.setText(name); self.setWindowTitle(f"Cartucheira {name}")
+        self.footer_brand.setText(f"Cartucheira {name}"); self.logo_name.setText(name); self.setWindowTitle(f"Cartucheira {name}")
         image=QImage(str(self.config.resolve_symbol()))
         if self.config.data.get("symbol","").startswith("preset:") and image.height()>150:
             image=image.copy(55,45,max(1,image.width()-110),105)
