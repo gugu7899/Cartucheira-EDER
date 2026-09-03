@@ -41,7 +41,7 @@ class MainWindow(QMainWindow):
         controls=self.panel("controlBar"); row=QHBoxLayout(controls); row.setContentsMargins(14,7,14,7)
         theme_box=QVBoxLayout(); self.theme_heading=QLabel("TEMA"); self.theme_heading.setAlignment(Qt.AlignmentFlag.AlignCenter); self.theme_heading.setStyleSheet("font-weight:800"); theme_box.addWidget(self.theme_heading)
         self.theme=QComboBox(); self.theme.addItems(THEMES); self.theme.setCurrentText(self.config.data.get("theme","Escuro Padrão")); self.theme.currentTextChanged.connect(self.set_theme); theme_box.addWidget(self.theme); row.addLayout(theme_box)
-        volume_box=QVBoxLayout(); volume_heading=QLabel("VOLUME GERAL"); volume_heading.setAlignment(Qt.AlignmentFlag.AlignCenter); volume_box.addWidget(volume_heading); line=QHBoxLayout(); line.addWidget(QLabel("🔊"))
+        volume_box=QVBoxLayout(); volume_heading=QLabel("VOLUME GERAL"); volume_heading.setAlignment(Qt.AlignmentFlag.AlignCenter); volume_heading.setStyleSheet("font-weight:800"); volume_box.addWidget(volume_heading); line=QHBoxLayout(); line.addWidget(QLabel("🔊"))
         self.volume=QSlider(Qt.Orientation.Horizontal); self.volume.setRange(0,100); self.volume.setValue(self.config.data.get("volume",80)); self.volume.setFixedWidth(145); self.volume.valueChanged.connect(self.set_volume); line.addWidget(self.volume); self.volume_text=QLabel(); line.addWidget(self.volume_text); volume_box.addLayout(line); row.addLayout(volume_box)
         row.addStretch(); logo=QLabel(); logo.setObjectName("logo"); logo.setAlignment(Qt.AlignmentFlag.AlignCenter); logo.setFixedSize(245,112)
         image=QImage(str(resource("assets/logo.png")))
@@ -57,7 +57,7 @@ class MainWindow(QMainWindow):
         for i in range(36):
             cart=Cart(i); cart.triggered.connect(self.play); cart.menu_requested.connect(self.cart_menu); grid.addWidget(cart,i//6,i%6); self.carts.append(cart)
         main.addLayout(grid,1)
-        footer=self.panel("footer"); row=QHBoxLayout(footer); row.setContentsMargins(12,5,10,5); owner=QLabel("Programador: Marcelo Soares"); owner.setStyleSheet("font-size:11pt;font-weight:400;color:#f2f2f2"); row.addWidget(owner); row.addStretch(); main.addWidget(footer)
+        owner=QLabel("Desenvolvedor Marcelo Soares"); owner.setStyleSheet("background:transparent;border:0;font-size:11pt;font-weight:400;color:#f2f2f2;padding-right:4px"); owner.setAlignment(Qt.AlignmentFlag.AlignRight); main.addWidget(owner)
         self.set_volume(self.volume.value())
     def refresh(self):
         for i,cart in enumerate(self.carts):
@@ -76,7 +76,7 @@ class MainWindow(QMainWindow):
     def set_volume(self,value): self.audio.volume(value); self.volume_text.setText(f"{value}%"); self.config.data["volume"]=value; self.config.write()
     def set_theme(self,name):
         bg,panel,cart,cart_alt,fg,accent=THEMES.get(name,THEMES["Escuro Padrão"]); style=BASE_STYLE.replace("@BG",bg).replace("@FG",fg).replace("@PANEL",panel).replace("@CARTALT",cart_alt).replace("@CART",cart).replace("@ACCENT",accent)
-        self.setStyleSheet(style); self.theme_heading.setStyleSheet(f"color:{accent};font-weight:800"); self.config.data["theme"]=name; self.config.write()
+        self.setStyleSheet(style); self.theme_heading.setStyleSheet("font-weight:800"); self.config.data["theme"]=name; self.config.write()
     @staticmethod
     def stamp(value): value=max(0,int(value)); return f"{value//60:02}:{value%60:02}"
     def tick(self):
