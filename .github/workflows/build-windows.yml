@@ -1,4 +1,4 @@
-name: Gerar Cartucheira EDER.exe
+name: Gerar Cartucheira MBS.exe
 on:
   workflow_dispatch:
   push:
@@ -25,6 +25,6 @@ jobs:
       - name: Publicar executável
         uses: actions/upload-artifact@v4
         with:
-          name: Cartucheira-EDER-Windows-x64
-          path: dist/Cartucheira EDER.exe
+          name: Cartucheira-MBS-Windows-x64
+          path: dist/Cartucheira MBS.exe
           if-no-files-found: error

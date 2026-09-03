@@ -30,26 +30,22 @@ QMenu{background:#202225;border:1px solid #555;padding:5px} QMenu::item{padding:
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__(); self.config=Config(); self.audio=Audio(); self.current=None; self.elapsed=0
-        self.setWindowTitle("Cartucheira EDER"); self.setMinimumSize(1100,740); self.resize(1300,900)
-        self.build(); self.refresh(); self.set_theme(self.config.data.get("theme","Escuro Padrão"))
+        self.setWindowTitle("Cartucheira MBS"); self.setMinimumSize(1100,740); self.resize(1300,900)
+        self.build(); self.refresh(); self.refresh_identity(); self.set_theme(self.config.data.get("theme","Escuro Padrão"))
         self.timer=QTimer(self); self.timer.timeout.connect(self.tick); self.timer.start(100)
     def panel(self,name): f=QFrame(); f.setObjectName(name); return f
     def build(self):
         center=QWidget(); self.setCentralWidget(center); main=QVBoxLayout(center); main.setContentsMargins(12,8,12,6); main.setSpacing(8)
         title=self.panel("titleBar"); row=QHBoxLayout(title); row.setContentsMargins(18,5,18,5)
-        brand=QLabel('◉  CARTUCHEIRA <span style="color:#ff8a00">EDER</span>'); brand.setObjectName("brand"); row.addWidget(brand); row.addStretch(); main.addWidget(title)
+        self.brand=QLabel(); self.brand.setObjectName("brand"); row.addWidget(self.brand); row.addStretch(); main.addWidget(title)
         controls=self.panel("controlBar"); row=QHBoxLayout(controls); row.setContentsMargins(14,7,14,7)
         theme_box=QVBoxLayout(); self.theme_heading=QLabel("TEMA"); self.theme_heading.setAlignment(Qt.AlignmentFlag.AlignCenter); self.theme_heading.setStyleSheet("font-weight:800"); theme_box.addWidget(self.theme_heading)
         self.theme=QComboBox(); self.theme.addItems(THEMES); self.theme.setCurrentText(self.config.data.get("theme","Escuro Padrão")); self.theme.currentTextChanged.connect(self.set_theme); theme_box.addWidget(self.theme); row.addLayout(theme_box)
         volume_box=QVBoxLayout(); volume_heading=QLabel("VOLUME GERAL"); volume_heading.setFixedWidth(145); volume_heading.setAlignment(Qt.AlignmentFlag.AlignCenter); volume_heading.setStyleSheet("font-weight:800"); heading_line=QHBoxLayout(); heading_line.addSpacing(28); heading_line.addWidget(volume_heading); heading_line.addSpacing(38); volume_box.addLayout(heading_line); line=QHBoxLayout(); line.addWidget(QLabel("🔊"))
         self.volume=QSlider(Qt.Orientation.Horizontal); self.volume.setRange(0,100); self.volume.setValue(self.config.data.get("volume",80)); self.volume.setFixedWidth(145); self.volume.valueChanged.connect(self.set_volume); line.addWidget(self.volume); self.volume_text=QLabel(); line.addWidget(self.volume_text); volume_box.addLayout(line); row.addLayout(volume_box)
-        row.addStretch(); logo=QLabel(); logo.setObjectName("logo"); logo.setAlignment(Qt.AlignmentFlag.AlignCenter); logo.setFixedSize(245,112)
-        image=QImage(str(resource("assets/logo.png")))
-        for y in range(image.height()):
-            for x in range(image.width()):
-                color=image.pixelColor(x,y)
-                if max(color.red(),color.green(),color.blue())<58: color.setAlpha(0); image.setPixelColor(x,y,color)
-        pix=QPixmap.fromImage(image); logo.setPixmap(pix.scaled(225,105,Qt.AspectRatioMode.KeepAspectRatio,Qt.TransformationMode.SmoothTransformation)); row.addWidget(logo); row.addStretch()
+        row.addStretch(); logo_panel=QFrame(); logo_panel.setObjectName("logo"); logo_panel.setFixedSize(245,112); logo_box=QVBoxLayout(logo_panel); logo_box.setContentsMargins(5,3,5,3); logo_box.setSpacing(0)
+        self.logo_image=QLabel(); self.logo_image.setAlignment(Qt.AlignmentFlag.AlignCenter); self.logo_name=QLabel(); self.logo_name.setAlignment(Qt.AlignmentFlag.AlignCenter); self.logo_name.setStyleSheet("font-size:15pt;font-weight:900;letter-spacing:2px")
+        logo_box.addWidget(self.logo_image,1); logo_box.addWidget(self.logo_name); row.addWidget(logo_panel); row.addStretch()
         for text,handler in [("↓  IMPORTAR",self.import_backup),("↑  EXPORTAR",self.export_backup)]:
             button=QPushButton(text); button.clicked.connect(handler); row.addWidget(button)
         settings=QPushButton("⚙"); settings.setFixedWidth(45); settings.clicked.connect(lambda:self.settings_menu(settings)); row.addWidget(settings); main.addWidget(controls)
@@ -62,6 +58,17 @@ class MainWindow(QMainWindow):
     def refresh(self):
         for i,cart in enumerate(self.carts):
             item=self.config.data["carts"][i]; cart.name(item.get("name","")); cart.set_color(item.get("color","#ff8a00"))
+    def refresh_identity(self):
+        name=self.config.data.get("app_name","MBS").strip() or "MBS"
+        self.brand.setText(f'CARTUCHEIRA <span style="color:#ff8a00">{name}</span>'); self.logo_name.setText(name); self.setWindowTitle(f"Cartucheira {name}")
+        image=QImage(str(self.config.resolve_symbol()))
+        if self.config.data.get("symbol","").startswith("preset:") and image.height()>150:
+            image=image.copy(55,0,max(1,image.width()-110),150)
+        for y in range(image.height()):
+            for x in range(image.width()):
+                color=image.pixelColor(x,y)
+                if max(color.red(),color.green(),color.blue())<58: color.setAlpha(0); image.setPixelColor(x,y,color)
+        self.logo_image.setPixmap(QPixmap.fromImage(image).scaled(105,72,Qt.AspectRatioMode.KeepAspectRatio,Qt.TransformationMode.SmoothTransformation))
     def play(self,index):
         if self.current==index and self.audio.busy(): self.stop(); return
         item=self.config.data["carts"][index]; path=self.config.resolve(item.get("audio",""))
@@ -98,12 +105,18 @@ class MainWindow(QMainWindow):
         current=QColor(self.config.data["carts"][index].get("color","#ff8a00")); chosen=QColorDialog.getColor(current,self,"Cor do cartucho")
         if chosen.isValid(): self.config.data["carts"][index]["color"]=chosen.name(); self.config.write(); self.carts[index].set_color(chosen.name())
     def settings_menu(self,button):
-        menu=QMenu(self); restore=QAction("Restaurar cartuchos originais",self); about=QAction("Sobre a Cartucheira EDER",self)
-        restore.triggered.connect(self.restore_defaults); about.triggered.connect(lambda:QMessageBox.about(self,"Cartucheira EDER","Cartucheira EDER v0.1\nSistema profissional de áudio para rádio e estúdio."))
-        menu.addAction(restore); menu.addSeparator(); menu.addAction(about); menu.exec(button.mapToGlobal(button.rect().bottomLeft()))
+        menu=QMenu(self); rename_app=QAction("Alterar nome da cartucheira…",self); symbol=QAction("Trocar símbolo…",self); restore=QAction("Restaurar configurações originais",self); about=QAction("Sobre",self)
+        rename_app.triggered.connect(self.change_app_name); symbol.triggered.connect(self.change_symbol); restore.triggered.connect(self.restore_defaults); about.triggered.connect(lambda:QMessageBox.about(self,"Cartucheira MBS","Cartucheira MBS v0.1\nSistema profissional de áudio para rádio e estúdio."))
+        menu.addActions([rename_app,symbol]); menu.addSeparator(); menu.addAction(restore); menu.addSeparator(); menu.addAction(about); menu.exec(button.mapToGlobal(button.rect().bottomLeft()))
+    def change_app_name(self):
+        current=self.config.data.get("app_name","MBS"); name,ok=QInputDialog.getText(self,"Nome da cartucheira","Novo nome:",text=current)
+        if ok and name.strip(): self.config.data["app_name"]=name.strip()[:24]; self.config.write(); self.refresh_identity()
+    def change_symbol(self):
+        filename,_=QFileDialog.getOpenFileName(self,"Selecionar símbolo","","Imagens (*.png *.jpg *.jpeg *.bmp *.webp)")
+        if filename:self.config.set_symbol(Path(filename)); self.refresh_identity()
     def restore_defaults(self):
         if QMessageBox.question(self,"Restaurar cartuchos","Restaurar nomes, cores e efeitos originais dos 36 cartuchos?")==QMessageBox.StandardButton.Yes:
-            self.stop(); self.config.data=Config.defaults(); self.config.write(); self.volume.setValue(80); self.theme.setCurrentText("Escuro Padrão"); self.refresh()
+            self.stop(); self.config.data=Config.defaults(); self.config.write(); self.volume.setValue(80); self.theme.setCurrentText("Escuro Padrão"); self.refresh(); self.refresh_identity()
     def clear(self,index):
         if QMessageBox.question(self,"Limpar cartucho","Remover nome e áudio deste cartucho?")==QMessageBox.StandardButton.Yes:
             if self.current==index:self.stop()
@@ -116,6 +129,6 @@ class MainWindow(QMainWindow):
     def import_backup(self):
         filename,_=QFileDialog.getOpenFileName(self,"Importar backup","","Backup EDER (*.eder);;ZIP (*.zip)")
         if filename and QMessageBox.question(self,"Importar backup","Substituir a programação atual?")==QMessageBox.StandardButton.Yes:
-            try:self.stop(); self.config.import_(Path(filename)); self.volume.setValue(self.config.data.get("volume",80)); self.theme.setCurrentText(self.config.data.get("theme","Escuro Padrão")); self.refresh(); QMessageBox.information(self,"Backup","Programação importada com sucesso.")
+            try:self.stop(); self.config.import_(Path(filename)); self.volume.setValue(self.config.data.get("volume",80)); self.theme.setCurrentText(self.config.data.get("theme","Escuro Padrão")); self.refresh(); self.refresh_identity(); QMessageBox.information(self,"Backup","Programação importada com sucesso.")
             except Exception as exc:QMessageBox.critical(self,"Backup",str(exc))
     def closeEvent(self,event:QCloseEvent): self.config.write(); self.audio.close(); event.accept()

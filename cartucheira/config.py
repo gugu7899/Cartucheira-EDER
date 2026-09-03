@@ -27,13 +27,14 @@ class Config:
         self.data = self.load()
     @staticmethod
     def defaults():
-        return {"version":1,"volume":80,"theme":"Escuro Padrão","carts":[{"name":n,"audio":f"preset:{i+1:02}.wav","color":"#ff8a00"} for i,n in enumerate(NAMES)]}
+        return {"version":1,"volume":80,"theme":"Escuro Padrão","app_name":"MBS","symbol":"preset:logo.png","carts":[{"name":n,"audio":f"preset:{i+1:02}.wav","color":"#ff8a00"} for i,n in enumerate(NAMES)]}
     def load(self):
         if self.path.exists():
             try:
                 data=json.loads(self.path.read_text(encoding="utf-8"))
                 if len(data.get("carts",[]))==36:
                     data.setdefault("theme","Escuro Padrão")
+                    data.setdefault("app_name","MBS"); data.setdefault("symbol","preset:logo.png")
                     for cart in data["carts"]: cart.setdefault("color","#ff8a00")
                     return data
             except Exception: pass
@@ -53,6 +54,13 @@ class Config:
         target=self.audio_dir/f"cart_{index+1:02}_{uuid.uuid4().hex[:8]}{source.suffix.lower()}"
         shutil.copy2(source,target); self.data["carts"][index]["audio"]=target.name
         self._unused(old); self.write()
+    def set_symbol(self,source):
+        target=self.audio_dir/f"symbol_{uuid.uuid4().hex[:8]}{source.suffix.lower()}"
+        shutil.copy2(source,target); self.data["symbol"]=target.name; self.write()
+    def resolve_symbol(self):
+        value=self.data.get("symbol","preset:logo.png")
+        path=resource("assets/logo.png") if value.startswith("preset:") else self.audio_dir/Path(value).name
+        return path if path.exists() else resource("assets/logo.png")
     def clear(self,index):
         old=self.data["carts"][index].get("audio","")
         color=self.data["carts"][index].get("color","#ff8a00")
