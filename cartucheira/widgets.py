@@ -12,6 +12,7 @@ class Cart(QFrame):
         self.led=QLabel("●"); self.led.setObjectName("led"); self.led.setProperty("active",False); top.addWidget(self.led)
         self.menu=QPushButton("⋮"); self.menu.setObjectName("dots"); self.menu.setFixedSize(24,24); self.menu.clicked.connect(lambda:self.menu_requested.emit(index)); top.addWidget(self.menu); box.addLayout(top)
         self.button=QPushButton(); self.button.setObjectName("trigger"); self.button.clicked.connect(lambda:self.triggered.emit(index)); box.addWidget(self.button,1)
+        self.time=QLabel("00:00 / 00:00"); self.time.setObjectName("cartTime"); self.time.setAlignment(Qt.AlignmentFlag.AlignCenter); self.time.hide(); box.addWidget(self.time)
         self.spectrum=QFrame(); self.spectrum.setFixedHeight(20); spectrum_row=QHBoxLayout(self.spectrum); spectrum_row.setContentsMargins(10,0,10,0); spectrum_row.setSpacing(2)
         self.bars=[]
         for _ in range(18):
@@ -19,7 +20,7 @@ class Cart(QFrame):
         self.spectrum.hide(); box.addWidget(self.spectrum)
         self.color_bar=QFrame(); self.color_bar.setFixedHeight(3); box.addWidget(self.color_bar)
         self.phase=0; self.animator=QTimer(self); self.animator.setInterval(75); self.animator.timeout.connect(self.animate_spectrum)
-        for widget in (self.number,self.led,self.color_bar,self.spectrum):
+        for widget in (self.number,self.led,self.color_bar,self.spectrum,self.time):
             widget.installEventFilter(self)
     def name(self,text): self.button.setText(text); self.button.setToolTip(text)
     def set_color(self,color):
@@ -28,7 +29,8 @@ class Cart(QFrame):
     def playing(self,value):
         self.setProperty("playing",value); self.led.setProperty("active",value)
         self.led.setStyleSheet(f"color:{self.color if value else '#444'}")
-        self.spectrum.setVisible(value)
+        self.spectrum.setVisible(value); self.time.setVisible(value)
+        if not value:self.time.setText("00:00 / 00:00")
         self.animator.start() if value else self.animator.stop()
         for w in (self,self.led): w.style().unpolish(w); w.style().polish(w)
     def animate_spectrum(self):
@@ -36,6 +38,7 @@ class Cart(QFrame):
         for i,bar in enumerate(self.bars):
             height=4+int(14*abs(math.sin(self.phase*.32+i*.71)*math.cos(self.phase*.17+i*.23)))
             bar.setFixedHeight(height)
+    def set_time(self,elapsed,duration): self.time.setText(f"{elapsed} / {duration}")
     def eventFilter(self,obj,event):
         if event.type()==QEvent.Type.MouseButtonRelease and event.button()==Qt.MouseButton.LeftButton:
             self.triggered.emit(self.index); return True
