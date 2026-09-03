@@ -10,7 +10,8 @@ THEMES={
  "Escuro Padrão":("#0d0e10","#15171a","#17191b","#1d2024","#f3f3f3","#ff8a00"),
  "Preto Estúdio":("#050505","#0a0a0a","#101010","#171717","#ffffff","#ff7900"),
  "Cinza Console":("#202226","#292c31","#303338","#383b40","#f5f5f5","#ff9b22"),
- "Azul Estúdio":("#071525","#0b2139","#102b49","#153657","#edf6ff","#268cff")}
+ "Azul Estúdio":("#071525","#0b2139","#102b49","#153657","#edf6ff","#268cff"),
+ "Verde Estúdio":("#06130e","#0a2017","#0e2a1e","#133526","#effff6","#20c878")}
 BASE_STYLE='''
 QWidget{background:@BG;color:@FG;font-family:"Segoe UI";font-size:10pt} QLabel{background:transparent} QMainWindow{background:@BG}
 #titleBar,#footer{background:@PANEL;border:1px solid #303238;border-radius:7px} #controlBar{background:@BG;border:0}
