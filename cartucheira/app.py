@@ -1,11 +1,3 @@
-test_backup (test_config.TestConfig.test_backup) ... ok
-test_clear_and_reload (test_config.TestConfig.test_clear_and_reload) ... ok
-test_defaults (test_config.TestConfig.test_defaults) ... ok
-
-----------------------------------------------------------------------
-Ran 3 tests in 0.004s
-
-OK
 from pathlib import Path
 from PyQt6.QtCore import Qt,QTimer
 from PyQt6.QtGui import QAction,QCloseEvent,QColor,QImage,QPixmap
@@ -65,7 +57,7 @@ class MainWindow(QMainWindow):
         for i in range(36):
             cart=Cart(i); cart.triggered.connect(self.play); cart.menu_requested.connect(self.cart_menu); grid.addWidget(cart,i//6,i%6); self.carts.append(cart)
         main.addLayout(grid,1)
-        owner=QLabel("Desenvolvedor: Marcelo Soares"); owner.setStyleSheet("background:transparent;border:0;font-size:11pt;font-weight:400;color:#f2f2f2;padding-left:4px"); owner.setAlignment(Qt.AlignmentFlag.AlignLeft); main.addWidget(owner)
+        owner=QLabel("Desenvolvedor Marcelo Soares"); owner.setStyleSheet("background:transparent;border:0;font-size:11pt;font-weight:400;color:#f2f2f2;padding-right:4px"); owner.setAlignment(Qt.AlignmentFlag.AlignRight); main.addWidget(owner)
         self.set_volume(self.volume.value())
     def refresh(self):
         for i,cart in enumerate(self.carts):
