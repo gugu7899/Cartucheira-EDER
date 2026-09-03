@@ -69,7 +69,7 @@ class MainWindow(QMainWindow):
         for i,key in enumerate(keys): self.key_bindings[i].setKey(QKeySequence(key)); self.carts[i].set_shortcut(key)
     def refresh_identity(self):
         name=self.config.data.get("app_name","MBS").strip() or "MBS"
-        self.footer_brand.setText(f"Cartucheira {name}"); self.logo_name.setText(name); self.setWindowTitle(f"Cartucheira {name}")
+        self.footer_brand.setText("Cartucheira MBS"); self.logo_name.setText(name); self.setWindowTitle(f"Cartucheira {name}")
         image=QImage(str(self.config.resolve_symbol()))
         if self.config.data.get("symbol","").startswith("preset:") and image.height()>150:
             image=image.copy(55,45,max(1,image.width()-110),105)
