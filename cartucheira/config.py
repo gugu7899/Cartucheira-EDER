@@ -9,6 +9,7 @@ NAMES = [
  "Alerta técnico","Chamada urgente","Sinal de conexão","Efeito de transmissão","Efeito de encerramento","Transição musical",
  "Impacto sonoro","Sinal especial","Efeito ambiente","Chamada extra","Reserva","Reserva"
 ]
+DEFAULT_KEYS=["1","2","3","4","5","6","Q","W","E","R","T","Y","A","S","D","F","G","H","Z","X","C","V","B","N","F1","F2","F3","F4","F5","F6","F7","F8","F9","F10","F11","F12"]
 
 def resource(relative):
     return Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent)) / relative
@@ -27,7 +28,7 @@ class Config:
         self.data = self.load()
     @staticmethod
     def defaults():
-        return {"version":1,"volume":80,"theme":"Escuro Padrão","app_name":"MBS","symbol":"preset:logo.png","output_device":"Padrão do sistema","color_semantics_v2":True,"carts":[{"name":n,"audio":f"preset:{i+1:02}.wav","color":""} for i,n in enumerate(NAMES)]}
+        return {"version":1,"volume":80,"theme":"Escuro Padrão","app_name":"MBS","symbol":"preset:logo.png","output_device":"Padrão do sistema","shortcuts":DEFAULT_KEYS.copy(),"color_semantics_v2":True,"carts":[{"name":n,"audio":f"preset:{i+1:02}.wav","color":""} for i,n in enumerate(NAMES)]}
     def load(self):
         if self.path.exists():
             try:
@@ -35,6 +36,7 @@ class Config:
                 if len(data.get("carts",[]))==36:
                     data.setdefault("theme","Escuro Padrão")
                     data.setdefault("app_name","MBS"); data.setdefault("symbol","preset:logo.png"); data.setdefault("output_device","Padrão do sistema")
+                    if not isinstance(data.get("shortcuts"),list) or len(data["shortcuts"])!=36: data["shortcuts"]=DEFAULT_KEYS.copy()
                     if not data.get("color_semantics_v2"):
                         for cart in data["carts"]:
                             if cart.get("color")=="#ff8a00": cart["color"]=""
