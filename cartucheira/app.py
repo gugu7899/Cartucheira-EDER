@@ -57,7 +57,7 @@ class MainWindow(QMainWindow):
         for i in range(36):
             cart=Cart(i); cart.triggered.connect(self.play); cart.menu_requested.connect(self.cart_menu); grid.addWidget(cart,i//6,i%6); self.carts.append(cart)
         main.addLayout(grid,1)
-        footer=self.panel("footer"); row=QHBoxLayout(footer); row.setContentsMargins(12,5,10,5); owner=QLabel("Programador: Marcelo Soares"); owner.setStyleSheet("font-size:11pt;font-weight:400;color:#f2f2f2"); row.addWidget(owner); row.addStretch(); main.addWidget(footer)
+        owner=QLabel("Desenvolvedor: Marcelo Soares"); owner.setStyleSheet("background:transparent;border:0;font-size:11pt;font-weight:400;color:#f2f2f2;padding-left:4px"); owner.setAlignment(Qt.AlignmentFlag.AlignLeft); main.addWidget(owner)
         self.set_volume(self.volume.value())
     def refresh(self):
         for i,cart in enumerate(self.carts):
