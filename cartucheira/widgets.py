@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QFrame,QHBoxLayout,QLabel,QProgressBar,QPushButton,Q
 class Cart(QFrame):
     triggered=pyqtSignal(int); menu_requested=pyqtSignal(int)
     def __init__(self,index):
-        super().__init__(); self.index=index; self.color="#ff8a00"
+        super().__init__(); self.index=index; self.color=""
         self.setObjectName("cart"); self.setProperty("playing",False); self.setProperty("alternate",bool(((index//6)+(index%6))%2))
         box=QVBoxLayout(self); box.setContentsMargins(9,5,5,5); box.setSpacing(2)
         top=QHBoxLayout(); self.number=QLabel(f"{index+1:02}"); self.number.setObjectName("number"); top.addWidget(self.number); top.addStretch(); self.shortcut=QLabel(); self.shortcut.setObjectName("shortcut"); top.addWidget(self.shortcut)
@@ -23,8 +23,9 @@ class Cart(QFrame):
     def set_locked(self,value): self.menu.setVisible(not value)
     def name(self,text): self.button.setText(text); self.button.setToolTip(text)
     def set_color(self,color):
-        self.color=color or "#ff8a00"
-        for bar in self.bars: bar.setStyleSheet(f"background:{self.color};border-radius:1px")
+        self.color=color or ""
+        self.setStyleSheet(f"QFrame#cart{{background:{self.color};}}" if self.color else "")
+        for bar in self.bars: bar.setStyleSheet("background:#ff8a00;border-radius:1px")
     def playing(self,value):
         self.setProperty("playing",value)
         self.spectrum.setVisible(value); self.time.setVisible(value)
