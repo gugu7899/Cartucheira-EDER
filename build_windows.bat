@@ -1,7 +1,7 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-title Gerar Cartucheira EDER.exe
+title Gerar Cartucheira MBS.exe
 echo Instalando dependencias...
 py -3.12 -m pip install --upgrade pip
 if errorlevel 1 goto error
@@ -10,7 +10,7 @@ if errorlevel 1 goto error
 echo Gerando executavel Windows 64 bits...
 py -3.12 -m PyInstaller --clean --noconfirm "Cartucheira EDER.spec"
 if errorlevel 1 goto error
-echo PRONTO: dist\Cartucheira EDER.exe
+echo PRONTO: dist\Cartucheira MBS.exe
 pause
 exit /b 0
 :error
