@@ -18,9 +18,9 @@ QWidget{background:@BG;color:@FG;font-family:"Segoe UI";font-size:10pt} QLabel{b
 QPushButton{background:#1d1f22;border:1px solid #484b50;border-radius:6px;padding:7px 12px;font-weight:700}
 QPushButton:hover{border-color:@ACCENT;background:#25272b} QPushButton:pressed{background:@ACCENT;color:#111}
 #stop{min-width:92px} #cart{background:@CART;border:1px solid #55585d;border-radius:8px} #cart[alternate="true"]{background:@CARTALT} #cart:hover{border-color:#8b8b8b}
-#cart[playing="true"]{border:2px solid @ACCENT} #number{color:#bfc0c2;font-size:10pt;font-weight:700}
+#cart[playing="true"]{border:2px solid @ACCENT} #cart[queued="true"]{border:1px solid @ACCENT} #number{color:#bfc0c2;font-size:10pt;font-weight:700}
 #dots{background:transparent;border:0;padding:0;font-size:16pt}
-#shortcut{color:#8f959d;font-size:8pt;font-weight:700;margin-right:4px} #lockButton[locked="true"]{background:@ACCENT;color:#111}
+#shortcut{color:#8f959d;font-size:8pt;font-weight:700;margin-right:4px} #queueBadge{color:@ACCENT;font-size:8pt;font-weight:800;margin-left:5px} #lockButton[locked="true"],#queueButton[active="true"]{background:@ACCENT;color:#111}
 #trigger{background:transparent;border:0;font-size:11pt;font-weight:700;padding:0} #trigger:hover,#trigger:pressed{background:transparent;color:#ff9d2e}
 #cartTime{background:transparent;color:#c7c7c7;font-size:8pt;font-weight:600} #audioProgress{background:transparent;border:0} #audioProgress::chunk{background:#ff8a00;border-radius:1px}
 QSlider{background:transparent} QSlider::groove:horizontal{height:4px;background:#30343a;border-radius:2px} QSlider::handle:horizontal{width:15px;margin:-5px 0;background:@ACCENT;border-radius:7px}
@@ -30,7 +30,7 @@ QMenu{background:#202225;border:1px solid #555;padding:5px} QMenu::item{padding:
 
 class MainWindow(QMainWindow):
     def __init__(self):
-        super().__init__(); self.config=Config(); self.audio=Audio(self.config.data.get("output_device")); self.current=None; self.elapsed=0; self.fading=False; self.locked=False
+        super().__init__(); self.config=Config(); self.audio=Audio(self.config.data.get("output_device")); self.current=None; self.elapsed=0; self.fading=False; self.locked=False; self.queue_mode=False; self.play_queue=[]
         self.setWindowTitle("Cartucheira MBS"); self.setMinimumSize(1100,740); self.resize(1300,900)
         self.build(); self.refresh(); self.refresh_identity(); self.set_theme(self.config.data.get("theme","Escuro Padrão"))
         self.timer=QTimer(self); self.timer.timeout.connect(self.tick); self.timer.start(100)
@@ -50,7 +50,9 @@ class MainWindow(QMainWindow):
         self.program_controls=[self.theme]
         for text,handler in [("↓  IMPORTAR",self.import_backup),("↑  EXPORTAR",self.export_backup)]:
             button=QPushButton(text); button.clicked.connect(handler); row.addWidget(button); self.program_controls.append(button)
-        self.lock_button=QPushButton("🔒  BLOQUEAR"); self.lock_button.setObjectName("lockButton"); self.lock_button.setProperty("locked",False); self.lock_button.clicked.connect(self.toggle_lock); row.addWidget(self.lock_button)
+        transmission_box=QVBoxLayout(); transmission_box.setSpacing(5)
+        self.lock_button=QPushButton("🔒  BLOQUEAR"); self.lock_button.setObjectName("lockButton"); self.lock_button.setProperty("locked",False); self.lock_button.clicked.connect(self.toggle_lock); transmission_box.addWidget(self.lock_button)
+        self.queue_button=QPushButton("☷  EM FILA"); self.queue_button.setObjectName("queueButton"); self.queue_button.setProperty("active",False); self.queue_button.clicked.connect(self.toggle_queue_mode); transmission_box.addWidget(self.queue_button); row.addLayout(transmission_box)
         settings=QPushButton("⚙"); settings.setFixedWidth(45); settings.clicked.connect(lambda:self.settings_menu(settings)); row.addWidget(settings); main.addWidget(controls)
         self.program_controls.append(settings)
         grid=QGridLayout(); grid.setSpacing(8); self.carts=[]
@@ -80,6 +82,13 @@ class MainWindow(QMainWindow):
                 if max(color.red(),color.green(),color.blue())<58: color.setAlpha(0); image.setPixelColor(x,y,color)
         self.logo_image.setPixmap(QPixmap.fromImage(image).scaled(105,72,Qt.AspectRatioMode.KeepAspectRatio,Qt.TransformationMode.SmoothTransformation))
     def play(self,index):
+        if self.queue_mode and self.current is not None and self.audio.busy():
+            if index==self.current:return
+            if index in self.play_queue:self.play_queue.remove(index)
+            else:
+                item=self.config.data["carts"][index]
+                if self.config.resolve(item.get("audio","")):self.play_queue.append(index)
+            self.refresh_queue(); return
         if self.current==index and self.audio.busy():
             if not self.fading:self.fading=True; self.audio.fadeout(650)
             return
@@ -93,6 +102,19 @@ class MainWindow(QMainWindow):
         self.audio.stop()
         if self.current is not None:self.carts[self.current].playing(False)
         self.current=None; self.elapsed=0; self.fading=False
+    def toggle_queue_mode(self):
+        self.queue_mode=not self.queue_mode; self.queue_button.setProperty("active",self.queue_mode)
+        self.queue_button.style().unpolish(self.queue_button); self.queue_button.style().polish(self.queue_button); self.refresh_queue()
+    def refresh_queue(self):
+        for cart in self.carts:cart.set_queue_position(None)
+        for position,index in enumerate(self.play_queue,1):self.carts[index].set_queue_position(position)
+        count=len(self.play_queue); self.queue_button.setText(f"☷  EM FILA ({count})" if count else "☷  EM FILA")
+    def play_next(self):
+        finished=self.current
+        if finished is not None:self.carts[finished].playing(False)
+        self.audio.stop(); self.current=None; self.elapsed=0; self.fading=False
+        if self.play_queue:
+            next_index=self.play_queue.pop(0); self.refresh_queue(); self.play(next_index)
     def toggle_lock(self):
         self.locked=not self.locked; self.lock_button.setText("🔓  DESBLOQUEAR" if self.locked else "🔒  BLOQUEAR"); self.lock_button.setProperty("locked",self.locked)
         self.lock_button.style().unpolish(self.lock_button); self.lock_button.style().polish(self.lock_button)
@@ -107,7 +129,7 @@ class MainWindow(QMainWindow):
     def tick(self):
         if self.current is None:return
         if not self.audio.paused:self.elapsed+=.1
-        if not self.audio.busy():self.stop();return
+        if not self.audio.busy():self.play_next();return
         duration=max(.01,self.audio.duration); cart=self.carts[self.current]; cart.set_time(self.stamp(self.elapsed),self.stamp(duration)); cart.set_progress(self.elapsed/duration*1000); cart.set_spectrum(self.audio.spectrum(self.elapsed,len(cart.bars)))
     def cart_menu(self,index):
         menu=QMenu(self); change=QAction("Trocar áudio…",self); rename=QAction("Renomear…",self); color=QAction("Alterar cor…",self); shortcut=QAction("Alterar atalho…",self); clear=QAction("Limpar",self)
