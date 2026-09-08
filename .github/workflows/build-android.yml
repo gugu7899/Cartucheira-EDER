@@ -21,6 +21,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Gerar símbolo e 36 efeitos iniciais
+        run: python tools/generate_assets.py
       - name: Compilar APK
         run: gradle -p android assembleDebug --no-daemon
       - name: Preparar arquivo
@@ -32,4 +34,3 @@ jobs:
           name: Cartucheira-MBS-Android
           path: dist-android/Cartucheira MBS.apk
           if-no-files-found: error
-
